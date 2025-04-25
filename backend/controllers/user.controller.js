@@ -41,10 +41,18 @@ export const login = async (req, res) => {
     if (!isPasswordMatch) {
       return res.status(403).json({ message: "Invalid Credentials" });
     }
-    generateTokenAndSetCookie(user?._id, res)
+    generateTokenAndSetCookie(user?._id, res);
     return res.status(200).json(user);
   } catch (error) {
     console.log("error in login controller", error.message);
   }
 };
 
+export const logout = async (req, res) => {
+  try {
+    res.cookie("token", "", { maxAge: 0 });
+    return res.status(200).json({ message: "Logged Out successffully!" })
+  } catch (error) {
+    console.log("error in logout controller", error.message);
+  }
+};
