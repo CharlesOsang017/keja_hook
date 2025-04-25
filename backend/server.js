@@ -7,7 +7,7 @@ dotenv.config()
 
 const app = express()
 
-
+app.use(express.json())
 app.use("/api/users", userRouter)
 
 const port = process.env.PORT || 6000
