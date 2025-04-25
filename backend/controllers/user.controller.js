@@ -20,9 +20,28 @@ export const register = async (req, res) => {
       email,
       password: hashedPassword,
     });
-    await newUser.save()
+    await newUser.save();
     return res.status(201).json({ message: "User created successfuly!" });
   } catch (error) {
     console.log("error in register controller", error.message);
+  }
+};
+
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "user not found" });
+    }
+    // match password
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    if (!isPasswordMatch) {
+      return res.status(403).json({ message: "Invalid Credentials" });
+    }
+    return res.status(200).json(user);
+  } catch (error) {
+    console.log("error in login controller", error.message);
   }
 };
