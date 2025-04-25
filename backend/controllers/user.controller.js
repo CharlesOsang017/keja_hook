@@ -1,5 +1,6 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
+import { generateTokenAndSetCookie } from "../utils/token.js";
 
 export const register = async (req, res) => {
   const { name, email, password } = req.body;
@@ -40,8 +41,10 @@ export const login = async (req, res) => {
     if (!isPasswordMatch) {
       return res.status(403).json({ message: "Invalid Credentials" });
     }
+    generateTokenAndSetCookie(user?._id, res)
     return res.status(200).json(user);
   } catch (error) {
     console.log("error in login controller", error.message);
   }
 };
+
