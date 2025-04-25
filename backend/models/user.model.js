@@ -15,14 +15,15 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     unique: true,
-    required: true
+    required: true,
   },
-    role: {
-      type: String,
-      enum: ["tenant", "landlord", "admin"],
-      default: "tenant",
-    },
- 
+  resetToken: String,
+  resetTokenExpire: Date,
+  role: {
+    type: String,
+    enum: ["tenant", "landlord", "admin"],
+    default: "tenant",
+  },
 });
 
 const User = mongoose.model("user", userSchema);
