@@ -21,8 +21,9 @@ export const register = async (req, res) => {
     const newUser = new User({
       name,
       email,
-      vericationToken,
+      verificationToken,
       password: hashedPassword,
+      verificationExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     });
     await newUser.save();
     return res.status(201).json({ message: "User created successfuly!" });
