@@ -16,9 +16,12 @@ export const register = async (req, res) => {
     }
     // Hashing the password
     const hashedPassword = await bcrypt.hash(password, 10);
+    // randomly generating a verification token
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString()
     const newUser = new User({
       name,
       email,
+      vericationToken,
       password: hashedPassword,
     });
     await newUser.save();
