@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { generateTokenAndSetCookie } from "../utils/token.js";
+import { sendVerificationEmail, sendWelcomeEmail } from "../mailtrap/emails.js";
 
 export const register = async (req, res) => {
   const { name, email, password } = req.body;
@@ -17,7 +18,9 @@ export const register = async (req, res) => {
     // Hashing the password
     const hashedPassword = await bcrypt.hash(password, 10);
     // randomly generating a verification token
-    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString()
+    const verificationToken = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
     const newUser = new User({
       name,
       email,
@@ -26,6 +29,7 @@ export const register = async (req, res) => {
       verificationExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     });
     await newUser.save();
+    await sendVerificationEmail(newUser?.email, verificationToken);
     return res.status(201).json({ message: "User created successfuly!" });
   } catch (error) {
     console.log("error in register controller", error.message);
@@ -55,8 +59,43 @@ export const login = async (req, res) => {
 export const logout = async (req, res) => {
   try {
     res.cookie("token", "", { maxAge: 0 });
-    return res.status(200).json({ message: "Logged Out successffully!" })
+    return res.status(200).json({ message: "Logged Out successffully!" });
   } catch (error) {
     console.log("error in logout controller", error.message);
+  }
+};
+
+export const verifyEmail = async (req, res) => {
+  const { code } = req.body;
+  try {
+    const user = await User.findOne({
+      verificationToken: code,
+      verificationExpiresAt: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid or expired verification code",
+      });
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpiresAt = undefined;
+    await user.save();
+
+    await sendWelcomeEmail(user.email, user.name);
+
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+      user: {
+        ...user._doc,
+        password: undefined,
+      },
+    });
+  } catch (error) {
+    console.log("error in verifyEmail ", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
