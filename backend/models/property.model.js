@@ -19,7 +19,7 @@ const propertySchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  imgaes: [String],
+  images: [String],
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
