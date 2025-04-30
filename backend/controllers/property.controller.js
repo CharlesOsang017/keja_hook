@@ -31,11 +31,21 @@ export const createProperty = async (req, res) => {
       description,
       price,
       location,
-      images: uploadedImages, // ✅ wrap as array
+      images: uploadedImages,
     });
 
     await newProperty.save();
     return res.status(201).json({ message: "Property Created Successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Get all properties
+export const getAllProperties = async (req, res) => {
+  try {
+    const allProperties = await Property.find();
+    return res.status(200).json(allProperties);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
