@@ -161,3 +161,17 @@ export const deleteProperty = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+export const propertyDetails = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const property = await Property.findById(id).populate({
+      path: "owner",
+      select: "-password",
+    });
+    return res.status(200).json(property);
+  } catch (error) {
+    console.log("error in getProperty details controller", error.message);
+    return res.status(500).json({ message: error.message });
+  }
+};
