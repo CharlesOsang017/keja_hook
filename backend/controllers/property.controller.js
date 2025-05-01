@@ -60,7 +60,7 @@ export const editProperty = async (req, res) => {
   let { images } = req.body;
 
   try {
-    const owner = req?.user;
+    const owner = req.user;
     if (!owner) {
       return res.status(404).json({ message: "Owner not found" });
     }
@@ -69,7 +69,7 @@ export const editProperty = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    if (!property.owner?.equals(owner?._id)) {
+    if (!property.owner?.equals(owner._id)) {
       return res
         .status(403)
         .json({ message: "You are not the owner of this property" });
