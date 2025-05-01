@@ -123,3 +123,41 @@ export const editProperty = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+export const deleteProperty = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const property = await Property.findById(id);
+    if (!property) {
+      return res.status(404).json({ message: "Property not found" });
+    }
+
+    // ✅ Check ownership
+    if (!property.owner?.equals(req.user._id)) {
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to delete this property" });
+    }
+
+    // ✅ Delete each image from Cloudinary
+    if (Array.isArray(property.images)) {
+      for (const image of property.images) {
+        try {
+          const imageId = image.split("/").pop().split(".")[0];
+          await cloudinary.uploader.destroy(imageId);
+        } catch (err) {
+          console.warn(`Failed to delete image ${image}:`, err.message);
+        }
+      }
+    }
+
+    // ✅ Delete property from DB
+    await Property.findByIdAndDelete(id);
+
+    return res.status(200).json({ message: "Property deleted successfully!" });
+  } catch (error) {
+    console.error("Error in deleteProperty controller:", error.message);
+    return res.status(500).json({ message: error.message });
+  }
+};
