@@ -16,6 +16,15 @@ const propertySchema = new mongoose.Schema(
       type: Number,
       trim: true,
     },
+    bedrooms: {
+      type: Number,
+      required: true,
+      trim: true,
+    },
+    bathrooms: {
+      type: Number,
+      required: true,
+    },
     location: {
       type: String,
       trim: true,
@@ -26,9 +35,15 @@ const propertySchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    isAvailable: {
-      type: Boolean,
-      default: true,
+    type: {
+      type: String,
+      enum: ["apartment", "villa", "condo", "house"],
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["available", "rented", "sold"],
+      default: "available",
     },
   },
   { timestamps: true }
