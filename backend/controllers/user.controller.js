@@ -10,10 +10,10 @@ import {
 } from "../mailtrap/emails.js";
 
 export const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, phone } = req.body;
 
   try {
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !phone) {
       return res.status(403).json({ message: "All fields are required" });
     }
     // Cheking if the user with the same email exists
@@ -30,6 +30,7 @@ export const register = async (req, res) => {
     const newUser = new User({
       name,
       email,
+      phone,
       verificationToken,
       password: hashedPassword,
       verificationExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
@@ -46,7 +47,7 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("-password");
     if (!user) {
       return res.status(404).json({ message: "user not found" });
     }
@@ -71,6 +72,18 @@ export const logout = async (req, res) => {
   }
 };
 
+export const getMe = async (req, res) => {
+  try {
+    const me = await User.findById(req.user._id).select("-password")
+    if (!me) {
+      return res.status(403).json({ message: "login first" });
+    }
+    return res.status(200).json(me);
+  } catch (error) {
+    console.log("error in getMe controller", error.message);
+    return res.status(500).json({ message: error.message });
+  }
+};
 export const verifyEmail = async (req, res) => {
   const { code } = req.body;
   try {
