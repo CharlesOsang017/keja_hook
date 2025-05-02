@@ -4,12 +4,12 @@ import { v2 as cloudinary } from "cloudinary";
 
 // Create a property
 export const createProperty = async (req, res) => {
-  const { title, description, price, location } = req.body;
+  const { title, description, price, location, bathrooms, bedrooms, type, status } = req.body;
   let { images } = req.body;
   const userId = req.user?._id;
 
   try {
-    if (!title || !description || !price || !location) {
+    if (!title || !description || !price || !location || !type) {
       return res.status(403).json({ message: "All fields are required" });
     }
 
@@ -30,6 +30,10 @@ export const createProperty = async (req, res) => {
       title,
       description,
       price,
+      bathrooms,
+      bedrooms,
+      type,
+      status,
       location,
       images: uploadedImages,
     });

@@ -47,19 +47,24 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email }).select("-password");
+    const user = await User.findOne({ email }).select("+password"); // include password
     if (!user) {
-      return res.status(404).json({ message: "user not found" });
+      return res.status(404).json({ message: "User not found" });
     }
-    // match password
+
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (!isPasswordMatch) {
       return res.status(403).json({ message: "Invalid Credentials" });
     }
+
     generateTokenAndSetCookie(user._id, res);
-    return res.status(200).json(user);
+
+    // remove password before sending the user back
+    const { password: _, ...userData } = user._doc;
+    return res.status(200).json(userData);
   } catch (error) {
     console.log("error in login controller", error.message);
+    return res.status(500).json({ message: "Server Error" });
   }
 };
 
@@ -74,7 +79,7 @@ export const logout = async (req, res) => {
 
 export const getMe = async (req, res) => {
   try {
-    const me = await User.findById(req.user._id).select("-password")
+    const me = await User.findById(req.user._id).select("-password");
     if (!me) {
       return res.status(403).json({ message: "login first" });
     }

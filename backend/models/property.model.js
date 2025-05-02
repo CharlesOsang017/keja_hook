@@ -30,11 +30,6 @@ const propertySchema = new mongoose.Schema(
       trim: true,
     },
     images: [String],
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
     type: {
       type: String,
       enum: ["apartment", "villa", "condo", "house"],
@@ -44,6 +39,11 @@ const propertySchema = new mongoose.Schema(
       type: String,
       enum: ["available", "rented", "sold"],
       default: "available",
+    },
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
   },
   { timestamps: true }
