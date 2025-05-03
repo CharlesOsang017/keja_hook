@@ -4,7 +4,16 @@ import { v2 as cloudinary } from "cloudinary";
 
 // Create a property
 export const createProperty = async (req, res) => {
-  const { title, description, price, location, bathrooms, bedrooms, type, status } = req.body;
+  const {
+    title,
+    description,
+    price,
+    location,
+    bathrooms,
+    bedrooms,
+    type,
+    status,
+  } = req.body;
   let { images } = req.body;
   const userId = req.user?._id;
 
@@ -60,7 +69,16 @@ export const getAllProperties = async (req, res) => {
 
 // edit property
 export const editProperty = async (req, res) => {
-  const { title, description, location, price, isAvailable } = req.body;
+  const {
+    title,
+    description,
+    price,
+    location,
+    bathrooms,
+    bedrooms,
+    type,
+    status,
+  } = req.body;
   let { images } = req.body;
 
   try {
@@ -114,6 +132,10 @@ export const editProperty = async (req, res) => {
     if (description) property.description = description;
     if (location) property.location = location;
     if (price) property.price = price;
+    if (type) property.type = type;
+    if (bedrooms) property.bedrooms = bedrooms;
+    if (bathrooms) property.bathrooms = bathrooms;
+    if (status) property.status = status;
     if (typeof isAvailable === "boolean") property.isAvailable = isAvailable;
 
     await property.save();
@@ -179,4 +201,3 @@ export const propertyDetails = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
