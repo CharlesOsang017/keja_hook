@@ -149,7 +149,7 @@ export const editProperty = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
+// delete property
 export const deleteProperty = async (req, res) => {
   const { id } = req.params;
 
@@ -187,7 +187,7 @@ export const deleteProperty = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
+// get property details
 export const propertyDetails = async (req, res) => {
   const { id } = req.params;
   try {
@@ -198,6 +198,20 @@ export const propertyDetails = async (req, res) => {
     return res.status(200).json(property);
   } catch (error) {
     console.log("error in getProperty details controller", error.message);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// get property by user
+export const userProperties = async (req, res) => {
+  const properties = await Property.find({ owner: req.params.userId });
+  if (!properties) {
+    return res.status(403).json({ message: "No properties for this user" });
+  }
+  return res.status(200).json(properties);
+  try {
+  } catch (error) {
+    console.log("error in userProperties controller", error.message);
     return res.status(500).json({ message: error.message });
   }
 };
