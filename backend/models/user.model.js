@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema(
     verificationExpiresAt: Date,
     role: {
       type: String,
-      enum: ["tenant", "landlord", "admin"],
+      enum: ["tenant", "landlord", "investor", "admin"],
       default: "tenant",
     },
   },

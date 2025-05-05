@@ -45,9 +45,15 @@ const paymentSchema = new mongoose.Schema(
     mpesaReceitNumber: {
       type: String,
     },
-  },
-  { timestanps: true }
+    transactionDate: {
+      type: Date
+    },
+    callbackMetadata: {
+      type: Object
+    },
+  }
+ 
 );
 
-const Transaction = mongoose.model("Transaction", paymentSchema);
-export default Transaction;
+const Payment = mongoose.model("Payment", paymentSchema);
+export default Payment;

@@ -2,6 +2,11 @@ import mongoose, { model } from "mongoose";
 
 const propertySchema = new mongoose.Schema(
   {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     title: {
       type: String,
       trim: true,
@@ -13,6 +18,10 @@ const propertySchema = new mongoose.Schema(
       required: true,
     },
     price: {
+      type: Number,
+      trim: true,
+    },
+    rentalPrice: {
       type: Number,
       trim: true,
     },
@@ -30,22 +39,29 @@ const propertySchema = new mongoose.Schema(
       trim: true,
     },
     images: [String],
-    type: {
+    PropertyType: {
       type: String,
-      enum: ["apartment", "villa", "condo", "house"],
+      enum: ["apartment", "house", "bed-sitter"],
       required: true,
     },
-    status: {
+    PropertyStatus: {
       type: String,
       enum: ["available", "rented", "sold"],
       default: "available",
     },
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+    isFeatured: {
+      type: Boolean,
+      default: false,
     },
+    isTokenized: {
+      type: Boolean,
+      default: false,
+    },
+    totalTokens: Number,
+    availableTokens: Number,
+    tokenPrice: Number,
   },
+  { virtualTourLink: String },
   { timestamps: true }
 );
 

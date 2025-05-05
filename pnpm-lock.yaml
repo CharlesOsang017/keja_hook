@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      axios:
+        specifier: ^1.9.0
+        version: 1.9.0
       bcrypt:
         specifier: ^5.1.1
         version: 5.1.1
@@ -38,12 +41,18 @@ importers:
       mailtrap:
         specifier: ^4.1.0
         version: 4.1.0(nodemailer@6.10.1)
+      moment:
+        specifier: ^2.30.1
+        version: 2.30.1
       mongoose:
         specifier: ^8.13.2
         version: 8.13.2
       nodemailer:
         specifier: ^6.10.1
         version: 6.10.1
+      uuid:
+        specifier: ^11.1.0
+        version: 11.1.0
     devDependencies:
       nodemon:
         specifier: ^3.1.9
@@ -513,6 +522,9 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  moment@2.30.1:
+    resolution: {integrity: sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how==}
+
   mongodb-connection-string-url@3.0.2:
     resolution: {integrity: sha512-rMO7CGo/9BFwyZABcKAWL8UJwH/Kc2x0g72uhDWzG48URRax5TCIcJ7Rc3RZqffZzO/Gwff/jyKwCU9TN8gehA==}
 
@@ -791,6 +803,10 @@ packages:
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
+
+  uuid@11.1.0:
+    resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
+    hasBin: true
 
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
@@ -1307,6 +1323,8 @@ snapshots:
 
   mkdirp@1.0.4: {}
 
+  moment@2.30.1: {}
+
   mongodb-connection-string-url@3.0.2:
     dependencies:
       '@types/whatwg-url': 11.0.5
@@ -1584,6 +1602,8 @@ snapshots:
   unpipe@1.0.0: {}
 
   util-deprecate@1.0.2: {}
+
+  uuid@11.1.0: {}
 
   vary@1.1.2: {}
 
