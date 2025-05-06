@@ -69,3 +69,27 @@ export const createLease = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+// get all the leases
+export const getLeases = async (req, res) => {
+  try {
+    let leases;
+
+    if (req.user.role === 'landlord') {
+      leases = await Lease.find({ landlord: req.user._id })
+        .populate('tenant', 'name email phone')
+        .populate('property', 'title location price');
+    } else if (req.user.role === 'tenant') {
+      leases = await Lease.find({ tenant: req.user.id })
+        .populate('landlord', 'name email phone')
+        .populate('property', 'title location price');
+    } else {
+      return res.status(401).json({ msg: 'Not authorized' });
+    }
+
+    return res.status(200).json(leases);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
