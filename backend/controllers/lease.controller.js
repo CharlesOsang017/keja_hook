@@ -3,6 +3,8 @@ import Property from "../models/property.model.js";
 import User from "../models/user.model.js";
 import Lease from "../models/lease.model.js";
 
+// @route   POST /api/leases
+// @desc    Create a new lease agreement
 export const createLease = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -70,7 +72,8 @@ export const createLease = async (req, res) => {
   }
 };
 
-// get all the leases
+// @route   GET /api/leases
+// @desc    Get leases for current user
 export const getLeases = async (req, res) => {
   try {
     let leases;
@@ -93,3 +96,13 @@ export const getLeases = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
+
+// @route   GET /api/leases/:id
+// @desc    Get lease by ID
+export const getDetailLease = async(req, res)=>{
+  try {
+    
+  } catch (error) {
+    
+  }
+}
