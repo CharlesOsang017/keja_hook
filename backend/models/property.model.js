@@ -39,12 +39,12 @@ const propertySchema = new mongoose.Schema(
       trim: true,
     },
     images: [String],
-    PropertyType: {
+    propertyType: {
       type: String,
       enum: ["apartment", "house", "bed-sitter"],
       required: true,
     },
-    PropertyStatus: {
+    propertyStatus: {
       type: String,
       enum: ["available", "rented", "sold"],
       default: "available",

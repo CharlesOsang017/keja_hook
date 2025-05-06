@@ -11,14 +11,14 @@ export const createProperty = async (req, res) => {
     location,
     bathrooms,
     bedrooms,
-    type,
-    status,
+    propertyType,
+    rentalPrice,
   } = req.body;
   let { images } = req.body;
   const userId = req.user?._id;
 
   try {
-    if (!title || !description || !price || !location || !type) {
+    if (!title || !description || !location || !propertyType) {
       return res.status(403).json({ message: "All fields are required" });
     }
 
@@ -41,9 +41,9 @@ export const createProperty = async (req, res) => {
       price,
       bathrooms,
       bedrooms,
-      type,
-      status,
+      propertyType,
       location,
+      rentalPrice,
       images: uploadedImages,
     });
 
@@ -57,7 +57,6 @@ export const createProperty = async (req, res) => {
 // Get all properties
 export const getAllProperties = async (req, res) => {
   try {
-    console.log("user", req.user);
     const allProperties = await Property.find()
       .sort({ createdAt: -1 })
       .populate({ path: "owner", select: "-password" });
@@ -73,10 +72,10 @@ export const editProperty = async (req, res) => {
     title,
     description,
     price,
+    rentalPrice,
     location,
     bathrooms,
-    bedrooms,
-    type,
+    bedrooms, 
     status,
   } = req.body;
   let { images } = req.body;
@@ -131,11 +130,12 @@ export const editProperty = async (req, res) => {
     if (title) property.title = title;
     if (description) property.description = description;
     if (location) property.location = location;
-    if (price) property.price = price;
-    if (type) property.type = type;
+    if (price) property.price = price;  
     if (bedrooms) property.bedrooms = bedrooms;
     if (bathrooms) property.bathrooms = bathrooms;
     if (status) property.status = status;
+    if (rentalPrice) property.rentalPrice = rentalPrice;
+
     if (typeof isAvailable === "boolean") property.isAvailable = isAvailable;
 
     await property.save();

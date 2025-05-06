@@ -1,11 +1,9 @@
-import express from 'express'
-import { handleCallback, initiatePayment } from '../controllers/payment.controller.js';
-import { protectRoute } from '../middleware/protectRoute.js';
+import express from "express";
+import { protectRoute } from "../middleware/protectRoute.js";
+import { initiateRentPayment } from "../controllers/payment.controller.js";
 
+const router = express.Router();
 
-const router = express.Router()
+router.post("/rent", protectRoute, initiateRentPayment)
 
-router.post('/pay', protectRoute, initiatePayment);
-router.post('/callback', protectRoute, handleCallback);
-
-export default router
+export default router;
