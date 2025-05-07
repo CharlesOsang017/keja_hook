@@ -145,3 +145,27 @@ export const updateLease = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+// @route   DELETE /api/leases/:id
+// @desc    Terminate lease agreement
+export const terminateLease = async (req, res) => {
+  try {
+    const lease = await Lease.findById(req.params.id);
+    if (!lease) {
+      return res.status(404).json({ message: "Lease not found!" });
+    }
+    // Verify requesting user is the landlord for this lease
+    if (lease.landlord.toString() !== req.user.id) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+    // Update property status back to available
+    await Property.findByIdAndUpdate(lease.property, { status: "available" });
+
+    await lease.deleteOne();
+
+    return res.status(200).json({ message: "Lease terminated successfully" });
+  } catch (error) {
+    console.log("error in terminate lease controller", error.message);
+    return res.status(500).json({ message: error.message });
+  }
+};
