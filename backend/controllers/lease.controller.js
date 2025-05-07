@@ -78,31 +78,46 @@ export const getLeases = async (req, res) => {
   try {
     let leases;
 
-    if (req.user.role === 'landlord') {
+    if (req.user.role === "landlord") {
       leases = await Lease.find({ landlord: req.user._id })
-        .populate('tenant', 'name email phone')
-        .populate('property', 'title location price');
-    } else if (req.user.role === 'tenant') {
+        .populate("tenant", "name email phone")
+        .populate("property", "title location price");
+    } else if (req.user.role === "tenant") {
       leases = await Lease.find({ tenant: req.user.id })
-        .populate('landlord', 'name email phone')
-        .populate('property', 'title location price');
+        .populate("landlord", "name email phone")
+        .populate("property", "title location price");
     } else {
-      return res.status(401).json({ msg: 'Not authorized' });
+      return res.status(401).json({ msg: "Not authorized" });
     }
 
     return res.status(200).json(leases);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Server error');
+    res.status(500).send("Server error");
   }
 };
 
 // @route   GET /api/leases/:id
 // @desc    Get lease by ID
-export const getDetailLease = async(req, res)=>{
+export const getDetailLease = async (req, res) => {
   try {
-    
+    const lease = await Lease.findById(req.params.id)
+      .populate("tenant", "name email phone")
+      .populate("landlord", "name email phone")
+      .populate("property", "title location price");
+    if (!lease) {
+      return res.status(404).json({ message: "Lease not found" });
+    }
+    // Verify requesting user is either landlord or tenant for this lease
+    if (
+      lease.landlord._id.toString() !== req.user.id &&
+      lease.tenant._id.toString() !== req.user.id
+    ) {
+      return res.status(401).json({ msg: "Not authorized" });
+    }
+    return res.status(200).json(lease);
   } catch (error) {
-    
+    console.log("error in getDetailLease controller", error.message);
+    return res.status(500).json({ message: error.message });
   }
-}
+};
