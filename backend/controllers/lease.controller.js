@@ -169,3 +169,27 @@ export const terminateLease = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+// @route   GET /api/leases/property/:propertyId
+// @desc    Get lease for a specific property
+export const getLeaseByProperty = async (req, res) => {
+  try {
+    const lease = await Lease.findOne({ property: req.params.propertyId })
+      .populate("tenant", "name email phone")
+      .populate("landlord", "name email phone");
+
+    if (!lease) {
+      return res.status(404).json({ msg: "No lease found for this property" });
+    }
+
+    // Verify requesting user is either landlord or tenant for this lease
+    if (
+      lease.landlord._id.toString() !== req.user.id &&
+      lease.tenant._id.toString() !== req.user.id
+    ) {
+      return res.status(401).json({ msg: "Not authorized" });
+    }
+
+    return res.status(500).json(lease);
+  } catch (err) {}
+};
