@@ -121,3 +121,27 @@ export const getDetailLease = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+// @route   PUT /api/leases/:id
+// @desc    Update lease agreement
+export const updateLease = async (req, res) => {
+  try {
+    let lease = await Lease.findById(req.params.id);
+    if (!lease) {
+      return res.status(404).json({ message: "lease not found" });
+    }
+    // Verify requesting user is the landlord for this lease
+    if (lease.landlord.toString() !== req.user.id) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+    lease = await Lease.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    ).populate("tenant landlord property");
+    return res.status(200).json({ message: "lease updated successfully!" });
+  } catch (error) {
+    console.log("error in update lease controller", error.message);
+    return res.status(500).json({ message: error.message });
+  }
+};
