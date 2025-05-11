@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const interactionSchema = new mongoose.Schema(
+const recommendationSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -19,5 +19,5 @@ const interactionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const Interaction = mongoose.model("Interaction", interactionSchema);
-export default Interaction;
+const Recommendation = mongoose.model("Recommendation", recommendationSchema);
+export default Recommendation;

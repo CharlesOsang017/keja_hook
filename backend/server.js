@@ -8,7 +8,7 @@ import rentRoute from './routes/rent.route.js'
 import { v2 as cloudinary } from "cloudinary";
 import cookieParser from "cookie-parser";
 import leaseRoute from './routes/lease.route.js'
-import reccommendationsRoute from './routes/reccomendations.routes.js'
+import recommendationsRoute from './routes/recommendations.route.js'
 
 dotenv.config();
 
@@ -29,7 +29,7 @@ app.use("/api/users", userRoute);
 app.use("/api/properties", propertyRoute);
 app.use("/api/payment", paymentRoute)
 app.use("/api/lease",  leaseRoute)
-app.use("/api/reccommendations", reccommendationsRoute)
+app.use("/api/recommendations", recommendationsRoute)
 app.use("/api/rent", rentRoute)
 
 const port = process.env.PORT || 6000;
