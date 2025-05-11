@@ -1,9 +1,10 @@
 import express from "express";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
-import userRouter from "./routes/user.route.js";
+import userRoute from "./routes/user.route.js";
 import propertyRoute from "./routes/property.route.js";
 import paymentRoute from './routes/payment.route.js'
+import rentRoute from './routes/rent.route.js'
 import { v2 as cloudinary } from "cloudinary";
 import cookieParser from "cookie-parser";
 import leaseRoute from './routes/lease.route.js'
@@ -24,11 +25,12 @@ cloudinary.config({
 });
 
 // middleware
-app.use("/api/users", userRouter);
+app.use("/api/users", userRoute);
 app.use("/api/properties", propertyRoute);
 app.use("/api/payment", paymentRoute)
 app.use("/api/lease",  leaseRoute)
 app.use("/api/reccommendations", reccommendationsRoute)
+app.use("/api/rent", rentRoute)
 
 const port = process.env.PORT || 6000;
 
