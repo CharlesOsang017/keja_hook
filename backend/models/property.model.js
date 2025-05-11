@@ -49,6 +49,11 @@ const propertySchema = new mongoose.Schema(
       enum: ["available", "rented", "sold"],
       default: "available",
     },
+    type: {
+      type: String,      
+      enum: ["rental", "sale", 'lease'],
+      default: "rental",
+    },
     isFeatured: {
       type: Boolean,
       default: false,

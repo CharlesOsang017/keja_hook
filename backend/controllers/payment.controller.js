@@ -1,9 +1,3 @@
-// const { lipaNaMpesaOnline, verifyMpesaPayment } = require('../config/mpesa.config');
-// const Lease = require('../models/Lease');
-// const Property = require('../models/Property');
-// const User = require('../models/User');
-// const { validationResult } = require('express-validator');
-
 import { lipaNaMpesaOnline, verifyMpesaPayment } from "../config/mpesa.config.js";
 import Lease from "../models/lease.model.js";
 import Property from "../models/property.model.js";
