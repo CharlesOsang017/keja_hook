@@ -179,7 +179,7 @@ export const getLeaseByProperty = async (req, res) => {
       .populate("landlord", "name email phone");
 
     if (!lease) {
-      return res.status(404).json({ msg: "No lease found for this property" });
+      return res.status(404).json({ message: "No lease found for this property" });
     }
 
     // Verify requesting user is either landlord or tenant for this lease
@@ -187,7 +187,7 @@ export const getLeaseByProperty = async (req, res) => {
       lease.landlord._id.toString() !== req.user.id &&
       lease.tenant._id.toString() !== req.user.id
     ) {
-      return res.status(401).json({ msg: "Not authorized" });
+      return res.status(401).json({ message: "Not authorized" });
     }
 
     return res.status(500).json(lease);
