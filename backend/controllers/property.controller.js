@@ -13,6 +13,7 @@ export const createProperty = async (req, res) => {
     bedrooms,
     propertyType,
     rentalPrice,
+    type,
   } = req.body;
   let { images } = req.body;
   const userId = req.user?._id;
@@ -45,6 +46,7 @@ export const createProperty = async (req, res) => {
       location,
       rentalPrice,
       images: uploadedImages,
+      type,
     });
 
     await newProperty.save();
@@ -77,6 +79,7 @@ export const editProperty = async (req, res) => {
     bathrooms,
     bedrooms, 
     status,
+    type,
   } = req.body;
   let { images } = req.body;
 
@@ -135,6 +138,7 @@ export const editProperty = async (req, res) => {
     if (bathrooms) property.bathrooms = bathrooms;
     if (status) property.status = status;
     if (rentalPrice) property.rentalPrice = rentalPrice;
+    if (type) property.type = type;
 
     if (typeof isAvailable === "boolean") property.isAvailable = isAvailable;
 
