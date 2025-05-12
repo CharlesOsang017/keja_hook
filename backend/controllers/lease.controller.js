@@ -17,7 +17,7 @@ export const createLease = async (req, res) => {
       tenantId,
       startDate,
       endDate,
-      monthlyRent,
+      // monthlyRent,
       paymentDueDay,
       terms,
     } = req.body;
@@ -27,8 +27,7 @@ export const createLease = async (req, res) => {
     if (!property) {
       return res.status(404).json({ msg: "Property not found" });
     }
-
-    if (property.propertyStatus !== "available") {
+    if (property.propertyStatus !== "available" || property.type !== 'lease') {
       return res
         .status(400)
         .json({ msg: "Property is not available for lease" });
@@ -54,15 +53,15 @@ export const createLease = async (req, res) => {
       tenant: tenantId,
       startDate,
       endDate,
-      monthlyRent,
+      monthlyRent: property.rentalPrice,
       paymentDueDay: paymentDueDay || 1,
-      terms,
+      terms,      
     });
 
     await lease.save();
 
     // Update property status
-    property.status = "rented";
+    property.propertyStatus = "leased";
     await property.save();
 
     res.status(201).json(lease);
@@ -159,10 +158,9 @@ export const terminateLease = async (req, res) => {
       return res.status(401).json({ message: "Not authorized" });
     }
     // Update property status back to available
-    await Property.findByIdAndUpdate(lease.property, { status: "available" });
-
+    await Property.findByIdAndUpdate(lease.property, { propertyStatus: "available" });
+    
     await lease.deleteOne();
-
     return res.status(200).json({ message: "Lease terminated successfully" });
   } catch (error) {
     console.log("error in terminate lease controller", error.message);
