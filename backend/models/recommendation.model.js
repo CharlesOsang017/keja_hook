@@ -10,7 +10,7 @@ const recommendationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Property",
     },
-    type: {
+    action: {
       type: String,
       enum: ["view", "favorite"],
       default: "view",

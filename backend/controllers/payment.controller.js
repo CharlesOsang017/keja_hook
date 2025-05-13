@@ -57,6 +57,7 @@ export const initiateRentPayment = async (req, res) => {
       paymentMethod: "mpesa",
       status: "pending",
       transactionDesc
+     
     });
 
     await lease.save();
