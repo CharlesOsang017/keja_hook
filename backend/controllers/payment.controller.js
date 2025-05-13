@@ -18,14 +18,14 @@ export const initiateRentPayment = async (req, res) => {
     const lease = await Lease.findById(leaseId).populate("tenant property");
 
     if (!lease) {
-      return res.status(404).json({ msg: "Lease not found" });
+      return res.status(404).json({ message: "Lease not found" });
     }
 
     // Verify the requesting user is the tenant
     if (lease.tenant._id.toString() !== req.user.id) {
       return res
         .status(401)
-        .json({ msg: "Not authorized to make this payment" });
+        .json({ message: "Not authorized to make this payment" });
     }
 
     // Format phone number (ensure it starts with 254)
@@ -56,6 +56,7 @@ export const initiateRentPayment = async (req, res) => {
       transactionId: response.CheckoutRequestID,
       paymentMethod: "mpesa",
       status: "pending",
+      transactionDesc
     });
 
     await lease.save();
@@ -169,15 +170,15 @@ export const initiateTokenPurchase = async (req, res) => {
     const property = await Property.findById(propertyId);
 
     if (!property) {
-      return res.status(404).json({ msg: "Property not found" });
+      return res.status(404).json({ message: "Property not found" });
     }
 
     if (!property.isTokenized) {
-      return res.status(400).json({ msg: "Property is not tokenized" });
+      return res.status(400).json({ message: "Property is not tokenized" });
     }
 
     if (tokens > property.availableTokens) {
-      return res.status(400).json({ msg: "Not enough tokens available" });
+      return res.status(400).json({ message: "Not enough tokens available" });
     }
 
     const amount = tokens * property.tokenPrice;
