@@ -1,3 +1,4 @@
+import axios from "axios";
 import Property from "../models/property.model.js";
 import Recommendation from "../models/recommendation.model.js";
 
@@ -109,8 +110,12 @@ export const autoRecommendations = async (req, res) => {
         aiRecommendation = aiResponse.data.choices[0].message.content;
       } catch (aiError) {
         console.error("AI recommendation failed:", aiError.message);
+      if (aiError.response?.status === 429) {
+        aiRecommendation = "Our recommendation system is currently busy. Here are some properties you might like:";
+      }else{
+        aiRecommendation = "Here are some properties matching your preferences:";
       }
-    }
+    }}
 
     // 6. Return response
     res.status(200).json({

@@ -10,6 +10,8 @@ import cookieParser from "cookie-parser";
 import leaseRoute from "./routes/lease.route.js";
 import recommendationsRoute from "./routes/recommendations.route.js";
 import cors from "cors";
+import favoriteRoute from './routes/favorite.route.js'
+
 dotenv.config();
 
 const app = express();
@@ -32,6 +34,7 @@ app.use("/api/payment", paymentRoute);
 app.use("/api/lease", leaseRoute);
 app.use("/api/recommendations", recommendationsRoute);
 app.use("/api/rent", rentRoute);
+app.use("/api/favorites", favoriteRoute)
 
 const port = process.env.PORT || 6000;
 
