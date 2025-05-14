@@ -1,45 +1,32 @@
-import { lipaNaMpesaOnline, verifyMpesaPayment } from "../config/mpesa.config.js";
+import {
+  lipaNaMpesaOnline,
+  verifyMpesaPayment,
+} from "../config/mpesa.config.js";
 import Lease from "../models/lease.model.js";
+import Payment from "../models/payment.model.js";
 import Property from "../models/property.model.js";
 import TokenizedAsset from "../models/tokenizedAsset.model.js";
-import {validationResult} from "express-validator";
+import { validationResult } from "express-validator";
 
 // @route   POST /api/payments/rent
 // @desc    Initiate rent payment via M-Pesa
 export const initiateRentPayment = async (req, res) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) {
+  if (!errors.isEmpty())
     return res.status(400).json({ errors: errors.array() });
-  }
 
   try {
     const { leaseId, phone } = req.body;
-
     const lease = await Lease.findById(leaseId).populate("tenant property");
+    if (!lease) return res.status(404).json({ message: "Lease not found" });
+    if (lease.tenant._id.toString() !== req.user.id)
+      return res.status(401).json({ message: "Unauthorized" });
 
-    if (!lease) {
-      return res.status(404).json({ message: "Lease not found" });
-    }
-
-    // Verify the requesting user is the tenant
-    if (lease.tenant._id.toString() !== req.user.id) {
-      return res
-        .status(401)
-        .json({ message: "Not authorized to make this payment" });
-    }
-
-    // Format phone number (ensure it starts with 254)
-    let formattedPhone = phone.startsWith("0")
-      ? `254${phone.substring(1)}`
-      : phone;
-    formattedPhone = formattedPhone.startsWith("+")
-      ? formattedPhone.substring(1)
-      : formattedPhone;
-
+    const formattedPhone = phone.replace(/^0/, "254").replace(/^\+/, "");
     const amount = lease.monthlyRent;
     const accountReference = `RENT-${lease.property._id}-${lease.tenant._id}`;
     const transactionDesc = `Rent payment for ${lease.property.title}`;
-    const callbackUrl = `${process.env.BASE_URL}/api/payment/callback`;
+    const callbackUrl = `${process.env.BASE_URL}/api/payments/callback`;
 
     const response = await lipaNaMpesaOnline(
       formattedPhone,
@@ -49,27 +36,72 @@ export const initiateRentPayment = async (req, res) => {
       callbackUrl
     );
 
-    // Save payment initiation details
-    lease.paymentHistory.push({
+    await Payment.create({
+      user: req.user._id,
+      lease: lease._id,
       amount,
-      paymentDate: new Date(),
+      type: "rent",
       transactionId: response.CheckoutRequestID,
-      paymentMethod: "mpesa",
-      paymentStatus: "pending",
-      transactionDesc
-     
+      phone: formattedPhone,
+      status: "pending",
+      description: transactionDesc,
     });
-
-    await lease.save();
 
     res.json({
-      message: "Payment initiated successfully",
+      message: "Rent payment initiated",
       checkoutRequestID: response.CheckoutRequestID,
-      responseCode: response.ResponseCode,
-      responseDescription: response.ResponseDescription,
     });
   } catch (err) {
-    console.error(err.message);
+    console.error("Rent error:", err.message);
+    res.status(500).send("Server error");
+  }
+};
+
+// @route   POST /api/payments/purchase
+// @desc    Initiate property purchase via M-Pesa
+export const initiatePropertyPurchase = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty())
+    return res.status(400).json({ errors: errors.array() });
+
+  try {
+    const { propertyId, phone } = req.body;
+    const property = await Property.findById(propertyId);
+    if (!property || property.type !== "sale") {
+      return res.status(400).json({ message: "Property unavailable for purchase" });
+    }
+
+    const formattedPhone = phone.replace(/^0/, "254").replace(/^\+/, "");
+    const amount = property.price;
+    const accountReference = `SALE-${propertyId}-${req.user._id}`;
+    const description = `Purchase of property ${property.title}`;
+    const callbackUrl = `${process.env.BASE_URL}/api/payment/callback`;
+
+    const response = await lipaNaMpesaOnline(
+      formattedPhone,
+      amount,
+      accountReference,
+      description,
+      callbackUrl
+    );
+
+    await Payment.create({
+      user: req.user._id,
+      property: property._id,
+      amount,
+      type: "sale",
+      transactionId: response.CheckoutRequestID,
+      phone: formattedPhone,
+      status: "pending",
+      description,
+    });
+
+    res.json({
+      message: "Property purchase initiated",
+      checkoutRequestID: response.CheckoutRequestID,
+    });
+  } catch (err) {
+    console.error("Sale error:", err.message);
     res.status(500).send("Server error");
   }
 };
