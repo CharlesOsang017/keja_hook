@@ -9,6 +9,9 @@ import {
   sendWelcomeEmail,
 } from "../mailtrap/emails.js";
 
+
+// @route   POST /api/users/register
+// @desc   register a user
 export const register = async (req, res) => {
   const { name, email, password, phone } = req.body;
 
@@ -43,6 +46,8 @@ export const register = async (req, res) => {
   }
 };
 
+// @route   POST /api/users/login
+// @desc   login a user
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -68,6 +73,10 @@ export const login = async (req, res) => {
   }
 };
 
+
+
+// @route   POST /api/users/logout
+// @desc   log out a user
 export const logout = async (req, res) => {
   try {
     res.cookie("token", "", { maxAge: 0 });
@@ -77,6 +86,9 @@ export const logout = async (req, res) => {
   }
 };
 
+
+// @route   GET /api/users/me
+// @desc   get a login user
 export const getMe = async (req, res) => {
   try {
     const me = await User.findById(req.user._id).select("-password");
@@ -89,6 +101,10 @@ export const getMe = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+
+// @route   POST /api/users/verify-email
+// @desc   verify the email for security purpose
 export const verifyEmail = async (req, res) => {
   const { code } = req.body;
   try {
@@ -124,6 +140,9 @@ export const verifyEmail = async (req, res) => {
   }
 };
 
+
+// @route   POST /api/users/forgot-password
+// @desc   trigger the forgot password request
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
   try {
@@ -160,6 +179,10 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
+
+
+// @route   POST /api/users/reset-password/:token
+// @desc    reset the password when you can't remember it
 export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;

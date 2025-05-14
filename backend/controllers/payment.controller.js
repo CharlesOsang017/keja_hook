@@ -39,7 +39,7 @@ export const initiateRentPayment = async (req, res) => {
     const amount = lease.monthlyRent;
     const accountReference = `RENT-${lease.property._id}-${lease.tenant._id}`;
     const transactionDesc = `Rent payment for ${lease.property.title}`;
-    const callbackUrl = `${process.env.BASE_URL}/api/payments/callback`;
+    const callbackUrl = `${process.env.BASE_URL}/api/payment/callback`;
 
     const response = await lipaNaMpesaOnline(
       formattedPhone,
@@ -55,7 +55,7 @@ export const initiateRentPayment = async (req, res) => {
       paymentDate: new Date(),
       transactionId: response.CheckoutRequestID,
       paymentMethod: "mpesa",
-      status: "pending",
+      paymentStatus: "pending",
       transactionDesc
      
     });
@@ -79,7 +79,6 @@ export const initiateRentPayment = async (req, res) => {
 export const mpesaCallback = async (req, res) => {
   try {
     const callbackData = req.body;
-
     // Check if the result code indicates success
     if (callbackData.Body.stkCallback.ResultCode === 0) {
       const checkoutRequestID = callbackData.Body.stkCallback.CheckoutRequestID;
@@ -114,17 +113,17 @@ export const mpesaCallback = async (req, res) => {
         const paymentIndex = lease.paymentHistory.findIndex(
           (payment) =>
             payment.transactionId === checkoutRequestID &&
-            payment.status === "pending"
+            payment.paymentStatus === "pending"
         );
 
         if (paymentIndex !== -1) {
-          lease.paymentHistory[paymentIndex].status = "completed";
+          lease.paymentHistory[paymentIndex].paymentStatus = "completed";
           lease.paymentHistory[paymentIndex].mpesaReceiptNumber =
             mpesaReceiptNumber;
           lease.paymentHistory[paymentIndex].paymentDate = new Date(
             transactionDate
           );
-
+          lease.markModified("paymentHistory");
           await lease.save();
 
           // TODO: Send payment confirmation email/notification

@@ -1,5 +1,8 @@
 import Recommendation from "../models/recommendation.model.js";
 
+
+// @route   POST /api/favarites/
+// @desc    Add property to favorites
 export const makeFavorite = async (req, res) => {
   try {
     const { propertyId } = req.body;
@@ -37,6 +40,9 @@ export const makeFavorite = async (req, res) => {
   }
 };
 
+
+// @route   POST /api/favarites/:id
+// @desc    remove property from favorites
 export const removeFavorite = async (req, res) => {
   try {
     const { propertyId } = req.params;
@@ -66,6 +72,8 @@ export const removeFavorite = async (req, res) => {
   }
 };
 
+// @route   GET /api/favarites/
+// @desc    retrieve all favorite properties from the DB
 export const allFavorites = async (req, res) => {
   const userId = req.user._id;
   try {

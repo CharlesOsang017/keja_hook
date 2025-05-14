@@ -43,9 +43,10 @@ const leaseSchema = new mongoose.Schema({
       paymentDate: Date,
       transactionId: String,
       paymentMethod: String,
-      status: {
+      paymentStatus: {
         type: String,
         enum: ["pending", "completed", "failed"],
+        default: 'pending'
       },
     },
   ],
