@@ -68,7 +68,9 @@ export const initiatePropertyPurchase = async (req, res) => {
     const { propertyId, phone } = req.body;
     const property = await Property.findById(propertyId);
     if (!property || property.type !== "sale") {
-      return res.status(400).json({ message: "Property unavailable for purchase" });
+      return res
+        .status(400)
+        .json({ message: "Property unavailable for purchase" });
     }
 
     const formattedPhone = phone.replace(/^0/, "254").replace(/^\+/, "");
@@ -111,10 +113,11 @@ export const initiatePropertyPurchase = async (req, res) => {
 export const mpesaCallback = async (req, res) => {
   try {
     const callback = req.body.Body.stkCallback;
-    if (callback.ResultCode !== 0) return res.json({ ResultCode: 0, ResultDesc: "Failed payment ignored" });
+    if (callback.ResultCode !== 0)
+      return res.json({ ResultCode: 0, ResultDesc: "Failed payment ignored" });
 
     const meta = callback.CallbackMetadata.Item;
-    const get = name => meta.find(i => i.Name === name)?.Value;
+    const get = (name) => meta.find((i) => i.Name === name)?.Value;
 
     const transactionId = callback.CheckoutRequestID;
     const amount = get("Amount");
@@ -123,7 +126,10 @@ export const mpesaCallback = async (req, res) => {
     const [type, refId, userId] = accountRef.split("-");
 
     const payment = await Payment.findOne({ transactionId });
-    if (!payment) return res.status(404).json({ ResultCode: 1, ResultDesc: "Payment not found" });
+    if (!payment)
+      return res
+        .status(404)
+        .json({ ResultCode: 1, ResultDesc: "Payment not found" });
 
     payment.status = "completed";
     payment.mpesaReceiptNumber = receipt;
@@ -144,7 +150,7 @@ export const mpesaCallback = async (req, res) => {
           currentOwner: userId,
           purchasePrice: property.tokenPrice,
           purchaseDate: new Date(),
-          transactionHash: receipt
+          transactionHash: receipt,
         });
       }
     }
@@ -155,7 +161,7 @@ export const mpesaCallback = async (req, res) => {
         property: refId,
         amount,
         status: "paid",
-        transactionDate: new Date()
+        transactionDate: new Date(),
       });
       await Property.findByIdAndUpdate(refId, { propertyStatus: "sold" });
     }
@@ -166,7 +172,6 @@ export const mpesaCallback = async (req, res) => {
     res.status(500).json({ ResultCode: 1, ResultDesc: "Callback failure" });
   }
 };
-
 
 // @route   POST /api/payments/verify
 // @desc    Verify M-Pesa payment status
@@ -307,5 +312,68 @@ export const tokenPurchaseCallback = async (req, res) => {
     res
       .status(500)
       .json({ ResultCode: 1, ResultDesc: "Error processing callback" });
+  }
+};
+
+// @route   POST /api/payments/upgrade
+// @desc    Initiate membership upgrade via M-Pesa
+export const initiateMembershipUpgrade = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const { plan, phone } = req.body || {};
+    const userId = req.user._id;
+
+    const validPlans = {
+      Pro: 500,
+      Premium: 1000,
+    };
+    console.log("Received body:", req.body);
+    if (!plan || !Object.keys(validPlans).includes(plan)) {
+      return res.status(400).json({
+        message: "Invalid or missing membership plan selected",
+        validPlans: Object.keys(validPlans),
+        recievedPlan: plan,
+      });
+    }
+
+    if (!phone) {
+      return res.status(400).json({ message: "Phone number is required" });
+    }
+
+    const formattedPhone = phone.replace(/^0/, "254").replace(/^\+/, "");
+    const amount = validPlans[plan];
+    const accountReference = `MEMBERSHIP-${plan}-${userId}`;
+    const description = `Upgrade to ${plan} plan`;
+    const callbackUrl = `${process.env.BASE_URL}/api/payments/membership-callback`;
+
+    const response = await lipaNaMpesaOnline(
+      formattedPhone,
+      amount,
+      accountReference,
+      description,
+      callbackUrl
+    );
+
+    await Payment.create({
+      user: userId,
+      amount,
+      type: "membership",
+      transactionId: response.CheckoutRequestID,
+      phone: formattedPhone,
+      status: "pending",
+      description: `Upgrade to ${plan}`,
+    });
+
+    res.json({
+      message: `Membership upgrade to ${plan} initiated`,
+      checkoutRequestID: response.CheckoutRequestID,
+    });
+  } catch (err) {
+    console.error("Membership upgrade error:", err.message);
+    res.status(500).send("Server error");
   }
 };

@@ -31,6 +31,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    membership: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Membership"
+    },
     resetPasswordToken: String,
     resetPasswordExpiresAt: Date,
     verificationToken: String,

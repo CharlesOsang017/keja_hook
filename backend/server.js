@@ -11,24 +11,19 @@ import leaseRoute from "./routes/lease.route.js";
 import recommendationsRoute from "./routes/recommendations.route.js";
 import cors from "cors";
 import favoriteRoute from './routes/favorite.route.js'
-import socketIO from 'socket.io'
+// import bodyParser from 'body-parser';
 
 
 dotenv.config();
 
 const app = express();
 
+// app.use(bodyParser.json());
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors());
+app.use(express.urlencoded({ extended: true }));
 
-// socket.io integration
-const io = socketIO(server, {
-  cors: {
-    origin: '*', // adjust for production
-    methods: ['GET', 'POST'],
-  },
-});
 
 // cloudinary configuration
 cloudinary.config({
