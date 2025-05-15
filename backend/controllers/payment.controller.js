@@ -110,68 +110,63 @@ export const initiatePropertyPurchase = async (req, res) => {
 // @desc    M-Pesa payment callback
 export const mpesaCallback = async (req, res) => {
   try {
-    const callbackData = req.body;
-    // Check if the result code indicates success
-    if (callbackData.Body.stkCallback.ResultCode === 0) {
-      const checkoutRequestID = callbackData.Body.stkCallback.CheckoutRequestID;
-      const metadata = callbackData.Body.stkCallback.CallbackMetadata.Item;
+    const callback = req.body.Body.stkCallback;
+    if (callback.ResultCode !== 0) return res.json({ ResultCode: 0, ResultDesc: "Failed payment ignored" });
 
-      // Extract payment details from callback
-      const amount = metadata.find((item) => item.Name === "Amount").Value;
-      const mpesaReceiptNumber = metadata.find(
-        (item) => item.Name === "MpesaReceiptNumber"
-      ).Value;
-      const transactionDate = metadata.find(
-        (item) => item.Name === "TransactionDate"
-      ).Value;
-      const phoneNumber = metadata.find(
-        (item) => item.Name === "PhoneNumber"
-      ).Value;
+    const meta = callback.CallbackMetadata.Item;
+    const get = name => meta.find(i => i.Name === name)?.Value;
 
-      // Parse account reference to get lease details
-      const accountReference = metadata.find(
-        (item) => item.Name === "AccountReference"
-      ).Value;
-      const [_, propertyId, tenantId] = accountReference.split("-");
+    const transactionId = callback.CheckoutRequestID;
+    const amount = get("Amount");
+    const receipt = get("MpesaReceiptNumber");
+    const accountRef = get("AccountReference");
+    const [type, refId, userId] = accountRef.split("-");
 
-      // Find the lease and update payment status
-      const lease = await Lease.findOne({
-        property: propertyId,
-        tenant: tenantId,
-      });
+    const payment = await Payment.findOne({ transactionId });
+    if (!payment) return res.status(404).json({ ResultCode: 1, ResultDesc: "Payment not found" });
 
-      if (lease) {
-        // Find the pending payment with this checkoutRequestID
-        const paymentIndex = lease.paymentHistory.findIndex(
-          (payment) =>
-            payment.transactionId === checkoutRequestID &&
-            payment.paymentStatus === "pending"
-        );
+    payment.status = "completed";
+    payment.mpesaReceiptNumber = receipt;
+    payment.completedAt = new Date();
+    await payment.save();
 
-        if (paymentIndex !== -1) {
-          lease.paymentHistory[paymentIndex].paymentStatus = "completed";
-          lease.paymentHistory[paymentIndex].mpesaReceiptNumber =
-            mpesaReceiptNumber;
-          lease.paymentHistory[paymentIndex].paymentDate = new Date(
-            transactionDate
-          );
-          lease.markModified("paymentHistory");
-          await lease.save();
+    if (type === "token") {
+      const property = await Property.findById(refId);
+      const tokens = Math.floor(amount / property.tokenPrice);
+      property.availableTokens -= tokens;
+      await property.save();
 
-          // TODO: Send payment confirmation email/notification
-        }
+      for (let i = 0; i < tokens; i++) {
+        await TokenizedAsset.create({
+          property: property._id,
+          tokenId: `TOKEN-${property._id}-${Date.now()}-${i}`,
+          owner: userId,
+          currentOwner: userId,
+          purchasePrice: property.tokenPrice,
+          purchaseDate: new Date(),
+          transactionHash: receipt
+        });
       }
     }
 
-    // Always acknowledge receipt of the callback
-    res.json({ ResultCode: 0, ResultDesc: "Callback processed successfully" });
+    if (type === "sale") {
+      await SaleTransaction.create({
+        buyer: userId,
+        property: refId,
+        amount,
+        status: "paid",
+        transactionDate: new Date()
+      });
+      await Property.findByIdAndUpdate(refId, { propertyStatus: "sold" });
+    }
+
+    res.json({ ResultCode: 0, ResultDesc: "Callback handled" });
   } catch (err) {
-    console.error(err.message);
-    res
-      .status(500)
-      .json({ ResultCode: 1, ResultDesc: "Error processing callback" });
+    console.error("Callback error:", err.message);
+    res.status(500).json({ ResultCode: 1, ResultDesc: "Callback failure" });
   }
 };
+
 
 // @route   POST /api/payments/verify
 // @desc    Verify M-Pesa payment status

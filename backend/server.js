@@ -11,6 +11,8 @@ import leaseRoute from "./routes/lease.route.js";
 import recommendationsRoute from "./routes/recommendations.route.js";
 import cors from "cors";
 import favoriteRoute from './routes/favorite.route.js'
+import socketIO from 'socket.io'
+
 
 dotenv.config();
 
@@ -19,6 +21,14 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors());
+
+// socket.io integration
+const io = socketIO(server, {
+  cors: {
+    origin: '*', // adjust for production
+    methods: ['GET', 'POST'],
+  },
+});
 
 // cloudinary configuration
 cloudinary.config({
@@ -37,6 +47,8 @@ app.use("/api/rent", rentRoute);
 app.use("/api/favorites", favoriteRoute)
 
 const port = process.env.PORT || 6000;
+
+
 
 app.listen(port, async (req) => {
   await connectDB();
