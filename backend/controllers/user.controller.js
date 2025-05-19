@@ -9,40 +9,49 @@ import {
   sendWelcomeEmail,
 } from "../mailtrap/emails.js";
 
-
 // @route   POST /api/users/register
 // @desc   register a user
 export const register = async (req, res) => {
-  const { name, email, password, phone } = req.body;
+  const { name, email, password, phone, role } = req.body;
 
   try {
     if (!name || !email || !password || !phone) {
       return res.status(403).json({ message: "All fields are required" });
     }
-    // Cheking if the user with the same email exists
+
+    // Check for valid role
+    const allowedRoles = ["tenant", "landlord", "investor", "admin"];
+    if (role && !allowedRoles.includes(role)) {
+      return res.status(400).json({ message: "Invalid role provided" });
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(403).json({ message: "User already exists" });
     }
-    // Hashing the password
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    // randomly generating a verification token
     const verificationToken = Math.floor(
       100000 + Math.random() * 900000
     ).toString();
+
     const newUser = new User({
       name,
       email,
       phone,
-      verificationToken,
       password: hashedPassword,
+      verificationToken,
       verificationExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+      role: role || "tenant", // default to tenant if no role is provided
     });
+
     await newUser.save();
-    await sendVerificationEmail(newUser?.email, verificationToken);
-    return res.status(201).json({ message: "User created successfuly!" });
+    await sendVerificationEmail(newUser.email, verificationToken);
+
+    return res.status(201).json({ message: "User created successfully!" });
   } catch (error) {
-    console.log("error in register controller", error.message);
+    console.error("Error in register controller:", error.message);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -73,8 +82,6 @@ export const login = async (req, res) => {
   }
 };
 
-
-
 // @route   POST /api/users/logout
 // @desc   log out a user
 export const logout = async (req, res) => {
@@ -85,7 +92,6 @@ export const logout = async (req, res) => {
     console.log("error in logout controller", error.message);
   }
 };
-
 
 // @route   GET /api/users/me
 // @desc   get a login user
@@ -101,7 +107,6 @@ export const getMe = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
 
 // @route   POST /api/users/verify-email
 // @desc   verify the email for security purpose
@@ -140,7 +145,6 @@ export const verifyEmail = async (req, res) => {
   }
 };
 
-
 // @route   POST /api/users/forgot-password
 // @desc   trigger the forgot password request
 export const forgotPassword = async (req, res) => {
@@ -178,8 +182,6 @@ export const forgotPassword = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
-
 
 // @route   POST /api/users/reset-password/:token
 // @desc    reset the password when you can't remember it

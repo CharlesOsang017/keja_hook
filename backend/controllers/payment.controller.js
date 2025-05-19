@@ -331,17 +331,11 @@ export const initiateMembershipUpgrade = async (req, res) => {
       Pro: 500,
       Premium: 1000,
     };
-    console.log("Received body:", req.body);
-    if (!plan || !Object.keys(validPlans).includes(plan)) {
-      return res.status(400).json({
-        message: "Invalid or missing membership plan selected",
-        validPlans: Object.keys(validPlans),
-        recievedPlan: plan,
-      });
-    }
 
-    if (!phone) {
-      return res.status(400).json({ message: "Phone number is required" });
+    if (!validPlans[plan]) {
+      return res
+        .status(400)
+        .json({ message: "Invalid membership plan selected" });
     }
 
     const formattedPhone = phone.replace(/^0/, "254").replace(/^\+/, "");
@@ -375,5 +369,146 @@ export const initiateMembershipUpgrade = async (req, res) => {
   } catch (err) {
     console.error("Membership upgrade error:", err.message);
     res.status(500).send("Server error");
+  }
+};
+
+export const membershipUpgradeCallback = async (req, res) => {
+  try {
+    const callbackData = req.body;
+
+    // Validate callback data
+    if (!callbackData.Body.stkCallback) {
+      return res.status(400).json({ message: "Invalid callback data" });
+    }
+
+    const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } =
+      callbackData.Body.stkCallback;
+
+    // Find the payment record
+    const payment = await Payment.findOne({ transactionId: CheckoutRequestID });
+    if (!payment) {
+      return res.status(404).json({ message: "Payment record not found" });
+    }
+
+    // Check payment status
+    if (ResultCode === 0) {
+      // Success case
+      const metadata = CallbackMetadata.Item.reduce((acc, item) => {
+        acc[item.Name] = item.Value;
+        return acc;
+      }, {});
+
+      // Update payment record
+      payment.status = "completed";
+      payment.mpesaReceiptNumber = metadata.MpesaReceiptNumber;
+      payment.transactionDate = new Date();
+      await payment.save();
+
+      // Extract plan from the account reference (MEMBERSHIP-{plan}-{userId})
+      const plan = payment.description
+        .replace("Upgrade to ", "")
+        .replace(" plan", "");
+
+      // Update user membership
+      const user = await User.findById(payment.user);
+      if (user) {
+        user.membershipLevel = plan;
+        user.membershipExpiresAt = new Date(
+          Date.now() + 365 * 24 * 60 * 60 * 1000
+        ); // 1 year from now
+        await user.save();
+      }
+
+      // You might want to send a notification to the user here
+      console.log(
+        `Membership upgrade to ${plan} completed for user ${payment.user}`
+      );
+    } else {
+      // Failed payment case
+      payment.status = "failed";
+      payment.failureReason = ResultDesc;
+      await payment.save();
+
+      console.log(
+        `Membership upgrade failed for payment ${CheckoutRequestID}: ${ResultDesc}`
+      );
+    }
+
+    // Always respond with success to MPesa
+    res.status(200).json({ message: "Callback processed successfully" });
+  } catch (err) {
+    console.error("Callback processing error:", err.message);
+    res.status(500).json({ message: "Error processing callback" });
+  }
+};
+
+export const verifyUpgradePayment = async (req, res) => {
+  try {
+    const { checkoutRequestID } = req.params;
+    const userId = req.user._id; // Ensure only the user who initiated can verify
+
+    // 1. Find the payment record
+    const payment = await Payment.findOne({
+      transactionId: checkoutRequestID,
+      user: userId,
+      type: "membership",
+    });
+
+    if (!payment) {
+      return res.status(404).json({ message: "Payment record not found" });
+    }
+
+    // 2. If payment is already completed/failed, return status
+    if (payment.status === "completed" || payment.status === "failed") {
+      return res.json({
+        status: payment.status,
+        receipt: payment.mpesaReceiptNumber,
+        plan: payment.description.replace("Upgrade to ", "").replace(" plan", ""),
+        updatedAt: payment.updatedAt,
+      });
+    }
+
+    // 3. If still pending, optionally query M-Pesa API for real-time status
+    // (This is an advanced step; you may skip if callback is reliable)
+    const mpesaResponse = await checkMpesaPaymentStatus(checkoutRequestID); // You'll need to implement this
+
+    if (mpesaResponse.ResultCode === "0") {
+      // Payment succeeded via API check
+      payment.status = "completed";
+      payment.mpesaReceiptNumber = mpesaResponse.MpesaReceiptNumber;
+      await payment.save();
+
+      // Update user membership
+      const plan = payment.description.replace("Upgrade to ", "").replace(" plan", "");
+      await User.findByIdAndUpdate(userId, {
+        membershipLevel: plan,
+        membershipExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+      });
+
+      return res.json({
+        status: "completed",
+        receipt: mpesaResponse.MpesaReceiptNumber,
+        plan,
+      });
+    } else if (mpesaResponse.ResultCode !== "0") {
+      // Payment failed via API check
+      payment.status = "failed";
+      payment.failureReason = mpesaResponse.ResultDesc;
+      await payment.save();
+
+      return res.json({
+        status: "failed",
+        reason: mpesaResponse.ResultDesc,
+      });
+    }
+
+    // 4. If still pending (no callback yet and API check didn't resolve)
+    return res.json({
+      status: "pending",
+      message: "Payment still processing. Check back later.",
+    });
+  } catch (err) {
+    console.error("Payment verification error:", err.message);
+    res.status(500).json({ message: "Error verifying payment" });
   }
 };

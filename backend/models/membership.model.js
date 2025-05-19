@@ -24,7 +24,7 @@ const membershipSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    features: [String], // e.g., ["Priority Listing", "Unlimited Properties"]
+    features: [String], 
     isActive: {
       type: Boolean,
       default: true,

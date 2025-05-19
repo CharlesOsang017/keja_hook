@@ -12,7 +12,7 @@ import recommendationsRoute from "./routes/recommendations.route.js";
 import cors from "cors";
 import favoriteRoute from './routes/favorite.route.js'
 // import bodyParser from 'body-parser';
-
+import advertRoute from './routes/advert.route.js'
 
 dotenv.config();
 
@@ -40,7 +40,7 @@ app.use("/api/lease", leaseRoute);
 app.use("/api/recommendations", recommendationsRoute);
 app.use("/api/rent", rentRoute);
 app.use("/api/favorites", favoriteRoute)
-
+app.use("/api/ads", advertRoute)
 const port = process.env.PORT || 6000;
 
 
