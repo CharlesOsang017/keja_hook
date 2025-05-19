@@ -41,6 +41,7 @@ app.use("/api/recommendations", recommendationsRoute);
 app.use("/api/rent", rentRoute);
 app.use("/api/favorites", favoriteRoute)
 app.use("/api/ads", advertRoute)
+
 const port = process.env.PORT || 6000;
 
 
