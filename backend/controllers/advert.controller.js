@@ -16,7 +16,7 @@ export const createAdWithLimit = async (req, res) => {
     if (!membership) {
       return res
         .status(403)
-        .json({ error: "Active membership required to post an ad." });
+        .json({ message: "Active membership required to post an ad." });
     }
 
     const plan = membership.planName;
@@ -24,7 +24,7 @@ export const createAdWithLimit = async (req, res) => {
     if (plan === "Basic") {
       return res
         .status(403)
-        .json({ error: "Upgrade to Pro or Premium to post ads." });
+        .json({ message: "Upgrade to Pro or Premium to post ads." });
     }
 
     // 2. If plan is Pro, check daily limit
@@ -42,7 +42,7 @@ export const createAdWithLimit = async (req, res) => {
 
       if (todayAdsCount >= 2) {
         return res.status(429).json({
-          error:
+          message:
             "Pro plan allows only 2 ads per day. Upgrade to Premium for unlimited posting.",
         });
       }

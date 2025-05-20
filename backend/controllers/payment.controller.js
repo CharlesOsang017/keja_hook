@@ -328,8 +328,8 @@ export const initiateMembershipUpgrade = async (req, res) => {
     const userId = req.user._id;
 
     const validPlans = {
-      Pro: 500,
-      Premium: 1000,
+      Pro: 5,
+      Premium: 10,
     };
 
     if (!validPlans[plan]) {
@@ -359,7 +359,7 @@ export const initiateMembershipUpgrade = async (req, res) => {
       transactionId: response.CheckoutRequestID,
       phone: formattedPhone,
       status: "pending",
-      description: `Upgrade to ${plan}`,
+      description,
     });
 
     res.json({
@@ -376,7 +376,6 @@ export const membershipUpgradeCallback = async (req, res) => {
   try {
     const callbackData = req.body;
 
-    // Validate callback data
     if (!callbackData.Body.stkCallback) {
       return res.status(400).json({ message: "Invalid callback data" });
     }
@@ -384,57 +383,52 @@ export const membershipUpgradeCallback = async (req, res) => {
     const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } =
       callbackData.Body.stkCallback;
 
-    // Find the payment record
     const payment = await Payment.findOne({ transactionId: CheckoutRequestID });
     if (!payment) {
       return res.status(404).json({ message: "Payment record not found" });
     }
 
-    // Check payment status
     if (ResultCode === 0) {
-      // Success case
       const metadata = CallbackMetadata.Item.reduce((acc, item) => {
         acc[item.Name] = item.Value;
         return acc;
       }, {});
 
-      // Update payment record
       payment.status = "completed";
       payment.mpesaReceiptNumber = metadata.MpesaReceiptNumber;
       payment.transactionDate = new Date();
       await payment.save();
 
-      // Extract plan from the account reference (MEMBERSHIP-{plan}-{userId})
       const plan = payment.description
         .replace("Upgrade to ", "")
         .replace(" plan", "");
+      const endDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
 
-      // Update user membership
       const user = await User.findById(payment.user);
       if (user) {
-        user.membershipLevel = plan;
-        user.membershipExpiresAt = new Date(
-          Date.now() + 365 * 24 * 60 * 60 * 1000
-        ); // 1 year from now
+        const membership = await Membership.create({
+          user: user._id,
+          plan,
+          price: payment.amount,
+          endDate,
+          paymentStatus: "paid",
+          features:
+            plan === "Pro"
+              ? ["Basic Support", "5 Listings"]
+              : plan === "Premium"
+              ? ["Priority Support", "Unlimited Listings"]
+              : [],
+        });
+
+        user.membership = membership._id;
         await user.save();
       }
-
-      // You might want to send a notification to the user here
-      console.log(
-        `Membership upgrade to ${plan} completed for user ${payment.user}`
-      );
     } else {
-      // Failed payment case
       payment.status = "failed";
       payment.failureReason = ResultDesc;
       await payment.save();
-
-      console.log(
-        `Membership upgrade failed for payment ${CheckoutRequestID}: ${ResultDesc}`
-      );
     }
 
-    // Always respond with success to MPesa
     res.status(200).json({ message: "Callback processed successfully" });
   } catch (err) {
     console.error("Callback processing error:", err.message);
@@ -445,9 +439,8 @@ export const membershipUpgradeCallback = async (req, res) => {
 export const verifyUpgradePayment = async (req, res) => {
   try {
     const { checkoutRequestID } = req.params;
-    const userId = req.user._id; // Ensure only the user who initiated can verify
+    const userId = req.user._id;
 
-    // 1. Find the payment record
     const payment = await Payment.findOne({
       transactionId: checkoutRequestID,
       user: userId,
@@ -458,32 +451,44 @@ export const verifyUpgradePayment = async (req, res) => {
       return res.status(404).json({ message: "Payment record not found" });
     }
 
-    // 2. If payment is already completed/failed, return status
     if (payment.status === "completed" || payment.status === "failed") {
       return res.json({
         status: payment.status,
         receipt: payment.mpesaReceiptNumber,
-        plan: payment.description.replace("Upgrade to ", "").replace(" plan", ""),
+        plan: payment.description
+          .replace("Upgrade to ", "")
+          .replace(" plan", ""),
         updatedAt: payment.updatedAt,
       });
     }
 
-    // 3. If still pending, optionally query M-Pesa API for real-time status
-    // (This is an advanced step; you may skip if callback is reliable)
-    const mpesaResponse = await checkMpesaPaymentStatus(checkoutRequestID); // You'll need to implement this
+    const mpesaResponse = await checkMpesaPaymentStatus(checkoutRequestID);
 
     if (mpesaResponse.ResultCode === "0") {
-      // Payment succeeded via API check
       payment.status = "completed";
       payment.mpesaReceiptNumber = mpesaResponse.MpesaReceiptNumber;
       await payment.save();
 
-      // Update user membership
-      const plan = payment.description.replace("Upgrade to ", "").replace(" plan", "");
-      await User.findByIdAndUpdate(userId, {
-        membershipLevel: plan,
-        membershipExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+      const plan = payment.description
+        .replace("Upgrade to ", "")
+        .replace(" plan", "");
+      const endDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+      const membership = await Membership.create({
+        user: userId,
+        plan,
+        price: payment.amount,
+        endDate,
+        paymentStatus: "paid",
+        features:
+          plan === "Pro"
+            ? ["Basic Support", "5 Listings"]
+            : plan === "Premium"
+            ? ["Priority Support", "Unlimited Listings"]
+            : [],
       });
+
+      await User.findByIdAndUpdate(userId, { membership: membership._id });
 
       return res.json({
         status: "completed",
@@ -491,7 +496,6 @@ export const verifyUpgradePayment = async (req, res) => {
         plan,
       });
     } else if (mpesaResponse.ResultCode !== "0") {
-      // Payment failed via API check
       payment.status = "failed";
       payment.failureReason = mpesaResponse.ResultDesc;
       await payment.save();
@@ -502,7 +506,6 @@ export const verifyUpgradePayment = async (req, res) => {
       });
     }
 
-    // 4. If still pending (no callback yet and API check didn't resolve)
     return res.json({
       status: "pending",
       message: "Payment still processing. Check back later.",
