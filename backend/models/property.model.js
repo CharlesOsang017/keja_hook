@@ -50,8 +50,8 @@ const propertySchema = new mongoose.Schema(
       default: "available",
     },
     type: {
-      type: String,      
-      enum: ["rental", "sale", 'lease'],
+      type: String,
+      enum: ["rental", "sale", "lease"],
       default: "rental",
     },
     isFeatured: {
@@ -65,6 +65,7 @@ const propertySchema = new mongoose.Schema(
     totalTokens: Number,
     availableTokens: Number,
     tokenPrice: Number,
+    contractAddress: { type: String, required: true },
   },
   { virtualTourLink: String },
   { timestamps: true }

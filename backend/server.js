@@ -13,7 +13,8 @@ import cors from "cors";
 import favoriteRoute from "./routes/favorite.route.js";
 import Web3 from "web3";
 import { ethers } from "ethers";
-
+import investmentRoute from './routes/investmentRoute.route.js'
+import membershipRoute from './routes/membership.route.js'
 import advertRoute from "./routes/advert.route.js";
 
 dotenv.config();
@@ -46,7 +47,8 @@ app.use("/api/recommendations", recommendationsRoute);
 app.use("/api/rent", rentRoute);
 app.use("/api/favorites", favoriteRoute);
 app.use("/api/ads", advertRoute);
-
+app.use("/api/investment", investmentRoute)
+app.use("/api/membershipt", membershipRoute)
 const port = process.env.PORT || 6000;
 
 app.listen(port, async (req) => {
