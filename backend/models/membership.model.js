@@ -16,6 +16,14 @@ const membershipSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    transactionId: {
+      type: String,
+      required: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+    },
     startDate: {
       type: Date,
       default: Date.now,
@@ -24,7 +32,7 @@ const membershipSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    features: [String], 
+    features: [String],
     isActive: {
       type: Boolean,
       default: true,
@@ -33,6 +41,9 @@ const membershipSchema = new mongoose.Schema(
       type: String,
       enum: ["paid", "pending", "failed"],
       default: "pending",
+    },
+    description: {
+      type: String,
     },
   },
   { timestamps: true }

@@ -11,9 +11,6 @@ import leaseRoute from "./routes/lease.route.js";
 import recommendationsRoute from "./routes/recommendations.route.js";
 import cors from "cors";
 import favoriteRoute from "./routes/favorite.route.js";
-import Web3 from "web3";
-import { ethers } from "ethers";
-import investmentRoute from './routes/investmentRoute.route.js'
 import membershipRoute from './routes/membership.route.js'
 import advertRoute from "./routes/advert.route.js";
 
@@ -34,9 +31,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Web3 provider
-const web3 = new Web3(process.env.INFURA_URL);
-const provider = new ethers.providers.JsonRpcProvider(process.env.INFURA_URL);
+
 
 // middleware
 app.use("/api/users", userRoute);
@@ -47,8 +42,7 @@ app.use("/api/recommendations", recommendationsRoute);
 app.use("/api/rent", rentRoute);
 app.use("/api/favorites", favoriteRoute);
 app.use("/api/ads", advertRoute);
-app.use("/api/investment", investmentRoute)
-app.use("/api/membershipt", membershipRoute)
+app.use("/api/membership", membershipRoute)
 const port = process.env.PORT || 6000;
 
 app.listen(port, async (req) => {

@@ -129,84 +129,69 @@ export const membershipUpgradeCallback = async (req, res) => {
 };
 
 export const verifyUpgradePayment = async (req, res) => {
-  try {
-    const { checkoutRequestID } = req.params;
-    const userId = req.user._id;
-
-    const payment = await Payment.findOne({
-      transactionId: checkoutRequestID,
-      user: userId,
-      type: "membership",
-    });
-
-    if (!payment) {
-      return res.status(404).json({ message: "Payment record not found" });
-    }
-
-    if (payment.status === "completed" || payment.status === "failed") {
-      return res.json({
-        status: payment.status,
-        receipt: payment.mpesaReceiptNumber,
-        plan: payment.description
-          .replace("Upgrade to ", "")
-          .replace(" plan", ""),
-        updatedAt: payment.updatedAt,
-      });
-    }
-
-    const mpesaResponse = await checkMpesaPaymentStatus(checkoutRequestID);
-
-    if (mpesaResponse.ResultCode === "0") {
-      payment.status = "completed";
-      payment.mpesaReceiptNumber = mpesaResponse.MpesaReceiptNumber;
-      await payment.save();
-
-      const plan = payment.description
-        .replace("Upgrade to ", "")
-        .replace(" plan", "");
-      const endDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-
-      const membership = await Membership.create({
+    try {
+      const { checkoutRequestID } = req.params;
+      const userId = req.user._id;
+  
+      const membership = await Membership.findOne({
+        transactionId: checkoutRequestID,
         user: userId,
-        plan,
-        price: payment.amount,
-        endDate,
-        paymentStatus: "paid",
-        features:
-          plan === "Pro"
-            ? ["Basic Support", "5 Listings"]
-            : plan === "Premium"
-            ? ["Priority Support", "Unlimited Listings"]
-            : [],
       });
-
-      await User.findByIdAndUpdate(userId, { membership: membership._id });
-
+  
+      if (!membership) {
+        return res.status(404).json({ message: "Membership payment not found" });
+      }
+  
+      if (membership.paymentStatus === "paid" || membership.paymentStatus === "failed") {
+        return res.json({
+          status: membership.paymentStatus,
+          receipt: membership.mpesaReceiptNumber,
+          plan: membership.plan,
+          updatedAt: membership.updatedAt,
+        });
+      }
+  
+      const mpesaResponse = await verifyMpesaPayment(checkoutRequestID);
+  
+      if (mpesaResponse.ResultCode === "0") {
+        const durationInDays = membership.plan === "Pro" ? 30 : 90;
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + durationInDays);
+  
+        membership.paymentStatus = "paid";
+        membership.mpesaReceiptNumber = mpesaResponse.MpesaReceiptNumber;
+        membership.endDate = endDate;
+        membership.isActive = true;
+        await membership.save();
+  
+        await User.findByIdAndUpdate(userId, { membership: membership._id });
+  
+        return res.json({
+          status: "paid",
+          receipt: mpesaResponse.MpesaReceiptNumber,
+          plan: membership.plan,
+        });
+      } else if (mpesaResponse.ResultCode !== "0") {
+        membership.paymentStatus = "failed";
+        membership.failureReason = mpesaResponse.ResultDesc;
+        await membership.save();
+  
+        return res.json({
+          status: "failed",
+          reason: mpesaResponse.ResultDesc,
+        });
+      }
+  
       return res.json({
-        status: "completed",
-        receipt: mpesaResponse.MpesaReceiptNumber,
-        plan,
+        status: "pending",
+        message: "Payment still processing. Check back later.",
       });
-    } else if (mpesaResponse.ResultCode !== "0") {
-      payment.status = "failed";
-      payment.failureReason = mpesaResponse.ResultDesc;
-      await payment.save();
-
-      return res.json({
-        status: "failed",
-        reason: mpesaResponse.ResultDesc,
-      });
+    } catch (err) {
+      console.error("Payment verification error:", err.message);
+      res.status(500).json({ message: "Error verifying payment" });
     }
-
-    return res.json({
-      status: "pending",
-      message: "Payment still processing. Check back later.",
-    });
-  } catch (err) {
-    console.error("Payment verification error:", err.message);
-    res.status(500).json({ message: "Error verifying payment" });
-  }
-};
+  };
+  
 
 export const getMemberships = async (req, res) => {
   try {
