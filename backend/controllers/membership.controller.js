@@ -19,7 +19,7 @@ export const initiateMembershipUpgrade = async (req, res) => {
 
     const validPlans = {
       Pro: 5, // KES
-      Premium: 10, // KES
+      Premium: 2, // KES
     };
 
     if (!validPlans[plan]) {
