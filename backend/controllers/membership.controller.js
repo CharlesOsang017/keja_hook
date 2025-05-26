@@ -4,6 +4,7 @@ import {
 } from "../config/mpesa.config.js";
 import { validationResult } from "express-validator";
 import Membership from "../models/membership.model.js";
+import Payment from "../models/payment.model.js";
 
 // @route   POST /api/payments/upgrade
 // @desc    Initiate membership upgrade via M-Pesa
@@ -18,7 +19,7 @@ export const initiateMembershipUpgrade = async (req, res) => {
     const userId = req.user._id;
 
     const validPlans = {
-      Pro: 5, // KES
+      Pro: 1, // KES
       Premium: 2, // KES
     };
 
@@ -81,7 +82,7 @@ export const membershipUpgradeCallback = async (req, res) => {
   try {
     const callbackData = req.body;
 
-    if (!callbackData.Body.stkCallback) {
+    if (!callbackData?.Body?.stkCallback) {
       return res.status(400).json({ message: "Invalid callback data" });
     }
 
@@ -89,11 +90,18 @@ export const membershipUpgradeCallback = async (req, res) => {
       callbackData.Body.stkCallback;
 
     const payment = await Payment.findOne({ transactionId: CheckoutRequestID });
+
     if (!payment) {
       return res.status(404).json({ message: "Payment record not found" });
     }
 
+    // If payment was already handled, exit early
+    if (payment.status === "completed" || payment.status === "failed") {
+      return res.status(200).json({ message: "Callback already processed" });
+    }
+
     if (ResultCode === 0) {
+      // Extract metadata
       const metadata = CallbackMetadata.Item.reduce((acc, item) => {
         acc[item.Name] = item.Value;
         return acc;
@@ -107,27 +115,41 @@ export const membershipUpgradeCallback = async (req, res) => {
       const plan = payment.description
         .replace("Upgrade to ", "")
         .replace(" plan", "");
-      const endDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
 
-      const user = await User.findById(payment.user);
-      if (user) {
-        const membership = await Membership.create({
-          user: user._id,
-          plan,
-          price: payment.amount,
-          endDate,
-          paymentStatus: "paid",
-          features:
-            plan === "Pro"
-              ? ["Basic Support", "5 Listings"]
-              : plan === "Premium"
-              ? ["Priority Support", "Unlimited Listings"]
-              : [],
-        });
+      const durationInDays = plan === "Pro" ? 30 : 90;
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(startDate.getDate() + durationInDays);
 
-        user.membership = membership._id;
-        await user.save();
-      }
+      // Deactivate any existing active memberships
+      await Membership.updateMany(
+        { user: payment.user, isActive: true },
+        { isActive: false }
+      );
+
+      const newMembership = await Membership.create({
+        user: payment.user,
+        plan,
+        price: payment.amount,
+        phone: payment.phone,
+        transactionId: payment.transactionId,
+        description: payment.description,
+        startDate,
+        endDate,
+        paymentStatus: "paid",
+        isActive: true,
+        features:
+          plan === "Pro"
+            ? ["Basic Support", "5 Listings"]
+            : plan === "Premium"
+            ? ["Priority Support", "Unlimited Listings"]
+            : [],
+      });
+
+      // Link membership to user
+      await User.findByIdAndUpdate(payment.user, {
+        membership: newMembership._id,
+      });
     } else {
       payment.status = "failed";
       payment.failureReason = ResultDesc;

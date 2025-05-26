@@ -86,7 +86,7 @@ export const login = async (req, res) => {
 // @desc   log out a user
 export const logout = async (req, res) => {
   try {
-    res.cookie("token", "", { maxAge: 0 });
+    res.cookie("jwt", "", { maxAge: 0 });
     return res.status(200).json({ message: "Logged Out successffully!" });
   } catch (error) {
     console.log("error in logout controller", error.message);

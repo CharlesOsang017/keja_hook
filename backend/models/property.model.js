@@ -64,8 +64,8 @@ const propertySchema = new mongoose.Schema(
     },
     totalTokens: Number,
     availableTokens: Number,
-    tokenPrice: Number,
-    contractAddress: { type: String, required: true },
+    tokenPrice: Number
+    
   },
   { virtualTourLink: String },
   { timestamps: true }

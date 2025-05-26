@@ -33,6 +33,7 @@ const paymentSchema = new mongoose.Schema(
     },
     mpesaReceiptNumber: String,
     phone: String,
+    transactionDate: Date,
     status: {
       type: String,
       enum: ["pending", "completed", "failed"],
