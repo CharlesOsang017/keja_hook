@@ -1,12 +1,15 @@
-import Advertisement from "../models/advert.model.js";
-import Membership from "../models/membership.model.js";
-import mongoose from "mongoose";
+import Membership from "../models/membership.model.js"; // Adjust path as needed
+import Advertisement from "../models/advert.model.js"; // Adjust path as needed
 
 export const createAdWithLimit = async (req, res) => {
   try {
+    // 1. Validate user authentication
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
     const userId = req.user._id;
 
-    // 1. Validate active membership
+    // 2. Validate active membership
     const membership = await Membership.findOne({
       user: userId,
       isActive: true,
@@ -22,14 +25,14 @@ export const createAdWithLimit = async (req, res) => {
 
     const plan = membership.plan;
 
-    // 2. Restrict Basic users
+    // 3. Restrict Basic users
     if (plan === "Basic") {
       return res.status(403).json({
         message: "Upgrade to Pro or Premium to post ads.",
       });
     }
 
-    // 3. Apply Pro plan ad posting limit
+    // 4. Apply Pro plan ad posting limit
     if (plan === "Pro") {
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
@@ -50,7 +53,13 @@ export const createAdWithLimit = async (req, res) => {
       }
     }
 
-    // 4. Validate ad dates
+    // 5. Validate request body
+    if (!req.body || typeof req.body !== "object") {
+      return res.status(400).json({
+        message: "Request body is missing or invalid.",
+      });
+    }
+
     const { startDate, endDate } = req.body;
 
     if (!startDate || !endDate) {
@@ -77,7 +86,7 @@ export const createAdWithLimit = async (req, res) => {
     const now = new Date();
     const isActive = parsedStart <= now && parsedEnd >= now;
 
-    // 5. Create the ad
+    // 6. Create the ad
     const ad = new Advertisement({
       ...req.body,
       advertiser: userId,
@@ -91,7 +100,13 @@ export const createAdWithLimit = async (req, res) => {
       ad,
     });
   } catch (error) {
-    console.error("Ad creation error:", error.message);
-    return res.status(500).json({ error: "Server error. Please try again." });
+    console.error("Ad creation error:", {
+      message: error.message,
+      stack: error.stack,
+    });
+    return res.status(500).json({
+      message: "Server error. Please try again.",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 };

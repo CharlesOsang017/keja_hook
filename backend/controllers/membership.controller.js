@@ -5,6 +5,7 @@ import {
 import { validationResult } from "express-validator";
 import Membership from "../models/membership.model.js";
 import Payment from "../models/payment.model.js";
+import User from "../models/user.model.js";
 
 // @route   POST /api/payments/upgrade
 // @desc    Initiate membership upgrade via M-Pesa
