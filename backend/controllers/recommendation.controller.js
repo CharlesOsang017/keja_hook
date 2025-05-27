@@ -1,6 +1,14 @@
 import axios from "axios";
 import Property from "../models/property.model.js";
 import Recommendation from "../models/recommendation.model.js";
+import axiosRetry from "axios-retry";
+
+axiosRetry(axios, {
+  retries: 5, // Increase retries
+  retryDelay: (retryCount) => Math.min(1000 * 2 ** retryCount, 10000), // Cap delay at 10s
+  retryCondition: (error) => error.response?.status === 429,
+});
+
 
 export const autoRecommendations = async (req, res) => {
   try {
@@ -57,7 +65,7 @@ export const autoRecommendations = async (req, res) => {
 
     const avgPrice = prices.length
       ? prices.reduce((a, b) => a + b, 0) / prices.length
-      : 20000; // Default fallback price
+      : 20000;
 
     console.log(
       `User patterns - Locations: ${locations}, Types: ${types}, Avg Price: ${avgPrice}`
@@ -72,7 +80,7 @@ export const autoRecommendations = async (req, res) => {
 
     console.log(`Found ${similarProperties.length} similar properties`);
 
-    // 5. Generate AI recommendation (if properties found)
+    // 5. Generate AI recommendation
     let aiRecommendation = "Here are some properties you might like:";
 
     if (similarProperties.length) {
@@ -90,32 +98,52 @@ export const autoRecommendations = async (req, res) => {
             )
             .join("\n");
 
+        console.log(`OpenAI API call attempted at ${new Date().toISOString()}`);
         const aiResponse = await axios.post(
           "https://api.openai.com/v1/chat/completions",
           {
-            model: "gpt-3.5-turbo", // More cost-effective than gpt-4
+            model: "gpt-3.5-turbo",
             messages: [{ role: "user", content: prompt }],
-            temperature: 0.7,
-            max_tokens: 150,
+            temperature: 1, // Lowered for more predictable output
+            max_tokens: 50, // Reduced to save tokens
           },
           {
             headers: {
               Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
               "Content-Type": "application/json",
             },
-            timeout: 5000, // 5 second timeout
+            timeout: 10000,
           }
         );
 
         aiRecommendation = aiResponse.data.choices[0].message.content;
       } catch (aiError) {
         console.error("AI recommendation failed:", aiError.message);
-      if (aiError.response?.status === 429) {
-        aiRecommendation = "Our recommendation system is currently busy. Here are some properties you might like:";
-      }else{
-        aiRecommendation = "Here are some properties matching your preferences:";
+        if (aiError.response?.status === 429) {
+          console.log("Rate limit hit, falling back to local recommendations", aiError.response?.data);
+          const fallbackProperties = await Property.find({
+            propertyStatus: "available",
+            $or: [
+              { location: { $in: locations } },
+              { propertyType: { $in: types } },
+            ],
+            rentalPrice: { $lte: avgPrice + 10000 },
+          })
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+          aiRecommendation =
+            "Here are some properties based on your preferences:";
+          return res.status(200).json({
+            recommendation: aiRecommendation,
+            properties: fallbackProperties,
+          });
+        } else {
+          aiRecommendation =
+            "Here are some properties matching your preferences:";
+        }
       }
-    }}
+    }
 
     // 6. Return response
     res.status(200).json({
