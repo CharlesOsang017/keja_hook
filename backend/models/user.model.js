@@ -45,6 +45,7 @@ const userSchema = new mongoose.Schema(
       default: "tenant",
     },
   },
+  walletAddress: { type: String }, // For blockchain integration
   { timestamps: true }
 );
 
