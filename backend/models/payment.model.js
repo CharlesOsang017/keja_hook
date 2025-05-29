@@ -23,7 +23,7 @@ const paymentSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["rent", "sale", 'token', 'membership'],
+      enum: ["rent", "sale", 'token', 'membership', 'partnership'],
       required: true,
     },
     transactionId: {

@@ -13,6 +13,7 @@ import cors from "cors";
 import favoriteRoute from "./routes/favorite.route.js";
 import membershipRoute from './routes/membership.route.js'
 import advertRoute from "./routes/advert.route.js";
+import revenueRoute from "./routes/revenue.route.js"
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ app.use("/api/rent", rentRoute);
 app.use("/api/favorites", favoriteRoute);
 app.use("/api/ads", advertRoute);
 app.use("/api/membership", membershipRoute)
+app.use("/api/revenue", revenueRoute)
 const port = process.env.PORT || 6000;
 
 app.listen(port, async (req) => {

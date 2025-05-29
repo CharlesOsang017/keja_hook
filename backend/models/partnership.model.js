@@ -8,7 +8,7 @@ const partnershipSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["financial_institution", "developer", "other"],
+    enum: ["financial_institution", "developer"],
     required: true,
   },
   name: {
