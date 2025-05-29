@@ -77,7 +77,7 @@ export const editProperty = async (req, res) => {
     rentalPrice,
     location,
     bathrooms,
-    bedrooms, 
+    bedrooms,
     status,
     type,
   } = req.body;
@@ -133,7 +133,7 @@ export const editProperty = async (req, res) => {
     if (title) property.title = title;
     if (description) property.description = description;
     if (location) property.location = location;
-    if (price) property.price = price;  
+    if (price) property.price = price;
     if (bedrooms) property.bedrooms = bedrooms;
     if (bathrooms) property.bathrooms = bathrooms;
     if (status) property.status = status;
