@@ -73,4 +73,17 @@ export const createPartnership = async (req, res) => {
       res.status(500).send('Server error');
     };
   };
+
+// @route   GET /api/revenue/partnerships
+// @desc    Get active partnerships
+export const getPartnerships = async (req, res) => {
+    try {
+      const partnerships = await Partnership.find({ status: 'active' })
+        .populate('partner', 'username');
+      res.status(200).json(partnerships);
+    } catch (err) {
+      console.error('Get partnerships error:', err.message);
+      res.status(500).send('Server error');
+    };
+  };
   
