@@ -7,6 +7,8 @@ import Partnership from "../models/partnership.model.js";
 import Payment from "../models/payment.model.js";
 import { validationResult } from 'express-validator';
 
+
+// @route POST /api/revenue/create-partnership
 // @desc    Create a partnership
 export const createPartnership = async (req, res) => {
     if (req.user.role !== 'investor' && req.user.role !== 'admin') {

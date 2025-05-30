@@ -44,7 +44,7 @@ const userSchema = new mongoose.Schema(
       enum: ["tenant", "landlord", "investor", "admin"],
       default: "tenant",
     },
-    walletAddress: { type: String }, // For blockchain integration
+    walletAddress: { type: String }, 
   },
  
   { timestamps: true }
