@@ -20,6 +20,11 @@ const membershipSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    status: {
+      type: String,
+      enum: ["active", "inactive", "pending"],
+      default: "pending",
+    },
     phone: {
       type: String,
       required: true,
