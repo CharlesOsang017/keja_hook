@@ -18,7 +18,7 @@ const partnershipSchema = new mongoose.Schema({
   },
   fee: {
     type: Number,
-    default: 50000, // KES 50,000
+    default: 50000, 
   },
   status: {
     type: String,
