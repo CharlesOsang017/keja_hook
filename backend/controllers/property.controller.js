@@ -22,6 +22,9 @@ export const createProperty = async (req, res) => {
     if (!title || !description || !location || !propertyType) {
       return res.status(403).json({ message: "All fields are required" });
     }
+    if(req.user.role !== "landlord"){
+      return res.status(403).json({ message: "You are not authorized to create a property" });
+    }
 
     let uploadedImages = [];
 
@@ -93,7 +96,7 @@ export const editProperty = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    if (!property.owner?.equals(owner._id)) {
+    if (!property.owner?.equals(owner._id) && req.user.role !== "landlord") {
       return res
         .status(403)
         .json({ message: "You are not the owner of this property" });
@@ -164,7 +167,7 @@ export const deleteProperty = async (req, res) => {
     }
 
     // ✅ Check ownership
-    if (!property.owner?.equals(req.user._id)) {
+    if (!property.owner?.equals(req.user._id)  && req.user.role !== "landlord") {
       return res
         .status(403)
         .json({ message: "You are not authorized to delete this property" });
@@ -206,16 +209,4 @@ export const propertyDetails = async (req, res) => {
   }
 };
 
-// get property by user
-export const userProperties = async (req, res) => {
-  const properties = await Property.find({ owner: req.params.userId });
-  if (!properties) {
-    return res.status(403).json({ message: "No properties for this user" });
-  }
-  return res.status(200).json(properties);
-  try {
-  } catch (error) {
-    console.log("error in userProperties controller", error.message);
-    return res.status(500).json({ message: error.message });
-  }
-};
+
