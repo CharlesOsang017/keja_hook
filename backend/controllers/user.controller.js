@@ -107,7 +107,7 @@ export const register = async (req, res) => {
     // Create default Basic membership
     const startDate = new Date();
     const endDate = new Date();
-    endDate.setDate(startDate.getDate() + 365); // 1-year validity for Basic plan
+    endDate.setDate(startDate.getDate() + 5); // 1-year validity for Basic plan
 
     const membership = new Membership({
       user: newUser._id,
@@ -118,7 +118,7 @@ export const register = async (req, res) => {
       description: "Free Basic membership for new users",
       startDate,
       endDate,
-      features: ["Basic Support", "Up to 4 property listings"], // Consistent with membership.controller.js
+      features: ["Basic Support", "Up to 4 property listings", "It is only active for 4 days upon registration"], // Consistent with membership.controller.js
       isActive: true,
       paymentStatus: "paid", // Free plan considered paid
     });

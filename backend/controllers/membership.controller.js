@@ -7,8 +7,6 @@ import Membership from "../models/membership.model.js";
 import Payment from "../models/payment.model.js";
 import User from "../models/user.model.js";
 
-// @route   POST /api/payments/upgrade
-// @desc    Initiate membership upgrade via M-Pesa
 export const initiateMembershipUpgrade = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -25,12 +23,17 @@ export const initiateMembershipUpgrade = async (req, res) => {
     };
 
     if (!validPlans[plan]) {
-      return res
-        .status(400)
-        .json({ message: "Invalid membership plan selected" });
+      return res.status(400).json({ message: "Invalid membership plan selected" });
     }
 
-    // Format phone: e.g. 0712345678 → 254712345678
+    // Find the user's existing membership
+    const existingMembership = await Membership.findOne({ user: userId, isActive: true });
+
+    if (!existingMembership) {
+      return res.status(404).json({ message: "No active membership found for this user" });
+    }
+
+    // Format phone: e.g., 0712345678 → 254712345678
     const formattedPhone = phone.replace(/^0/, "254").replace(/^\+/, "");
     const price = validPlans[plan];
     const accountReference = `MEMBERSHIP-${plan}-${userId}`;
@@ -50,24 +53,24 @@ export const initiateMembershipUpgrade = async (req, res) => {
     const endDate = new Date();
     endDate.setDate(startDate.getDate() + durationInDays);
 
-    await Membership.create({
-      user: userId,
-      plan,
-      price,
-      transactionId: response.CheckoutRequestID,
-      phone: formattedPhone,
-      description,
-      startDate,
-      endDate,
-      features:
-        plan === "Pro"
-          ? ["Basic Support", "5 Listings"]
-          : plan === "Premium"
-          ? ["Priority Support", "Unlimited Listings"]
-          : [],
-      isActive: false,
-      paymentStatus: "pending",
-    });
+    // Update the existing membership
+    existingMembership.plan = plan;
+    existingMembership.price = price;
+    existingMembership.transactionId = response.CheckoutRequestID;
+    existingMembership.phone = formattedPhone;
+    existingMembership.description = description;
+    existingMembership.startDate = startDate;
+    existingMembership.endDate = endDate;
+    existingMembership.features =
+      plan === "Pro"
+        ? ["Basic Support", "5 Listings"]
+        : plan === "Premium"
+        ? ["Priority Support", "Unlimited Listings"]
+        : [];
+    existingMembership.isActive = false; // Set to false until payment is confirmed
+    existingMembership.paymentStatus = "pending";
+
+    await existingMembership.save();
 
     res.json({
       message: `Membership upgrade to ${plan} initiated`,
@@ -79,6 +82,8 @@ export const initiateMembershipUpgrade = async (req, res) => {
   }
 };
 
+// @route   POST /api/payments/membership-callback
+// @desc    Handle M-Pesa callback for membership upgrade
 export const membershipUpgradeCallback = async (req, res) => {
   try {
     const callbackData = req.body;
@@ -101,6 +106,15 @@ export const membershipUpgradeCallback = async (req, res) => {
       return res.status(200).json({ message: "Callback already processed" });
     }
 
+    const membership = await Membership.findOne({
+      transactionId: CheckoutRequestID,
+      user: payment.user,
+    });
+
+    if (!membership) {
+      return res.status(404).json({ message: "Membership not found" });
+    }
+
     if (ResultCode === 0) {
       // Extract metadata
       const metadata = CallbackMetadata.Item.reduce((acc, item) => {
@@ -113,48 +127,25 @@ export const membershipUpgradeCallback = async (req, res) => {
       payment.transactionDate = new Date();
       await payment.save();
 
-      const plan = payment.description
-        .replace("Upgrade to ", "")
-        .replace(" plan", "");
+      // Update existing membership
+      membership.paymentStatus = "paid";
+      membership.isActive = true;
+      membership.mpesaReceiptNumber = metadata.MpesaReceiptNumber;
+      await membership.save();
 
-      const durationInDays = plan === "Pro" ? 30 : 90;
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setDate(startDate.getDate() + durationInDays);
-
-      // Deactivate any existing active memberships
-      await Membership.updateMany(
-        { user: payment.user, isActive: true },
-        { isActive: false }
-      );
-
-      const newMembership = await Membership.create({
-        user: payment.user,
-        plan,
-        price: payment.amount,
-        phone: payment.phone,
-        transactionId: payment.transactionId,
-        description: payment.description,
-        startDate,
-        endDate,
-        paymentStatus: "paid",
-        isActive: true,
-        features:
-          plan === "Pro"
-            ? ["Basic Support", "5 Listings"]
-            : plan === "Premium"
-            ? ["Priority Support", "Unlimited Listings"]
-            : [],
-      });
-
-      // Link membership to user
+      // Update user with membership ID (already linked, but ensure consistency)
       await User.findByIdAndUpdate(payment.user, {
-        membership: newMembership._id,
+        membership: membership._id,
       });
     } else {
       payment.status = "failed";
       payment.failureReason = ResultDesc;
       await payment.save();
+
+      membership.paymentStatus = "failed";
+      membership.isActive = false;
+      membership.failureReason = ResultDesc;
+      await membership.save();
     }
 
     res.status(200).json({ message: "Callback processed successfully" });
@@ -164,6 +155,8 @@ export const membershipUpgradeCallback = async (req, res) => {
   }
 };
 
+// @route   GET /api/payments/verify/:checkoutRequestID
+// @desc    Verify membership upgrade payment
 export const verifyUpgradePayment = async (req, res) => {
   try {
     const { checkoutRequestID } = req.params;
@@ -231,6 +224,8 @@ export const verifyUpgradePayment = async (req, res) => {
   }
 };
 
+// @route   GET /api/memberships
+// @desc    Get all memberships
 export const getMemberships = async (req, res) => {
   try {
     const memberships = await Membership.find().populate("user");

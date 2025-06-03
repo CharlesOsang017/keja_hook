@@ -44,11 +44,10 @@ export const createProperty = async (req, res) => {
     // Check property limit for Basic plan
     if (membership.plan === "Basic") {
       const propertyCount = await Property.countDocuments({ owner: userId });
-      if (propertyCount >= 4) {
+      if (propertyCount >= 3) {
         return res.status(403).json({
           message:
-            "You have reached the maximum limit of 4 properties for the Basic plan. Please upgrade to Pro or Premium plan to add more properties.",
-          upgradeLink: "https://x.ai/grok", // Redirect to subscription upgrade page
+            "You have reached the maximum limit of 4 properties for the Basic plan.",          
         });
       }
     }
