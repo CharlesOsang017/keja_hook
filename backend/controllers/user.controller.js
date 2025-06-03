@@ -8,15 +8,61 @@ import {
   sendVerificationEmail,
   sendWelcomeEmail,
 } from "../mailtrap/emails.js";
+import Membership from "../models/membership.model.js";
 
 // @route   POST /api/users/register
 // @desc   register a user
+// export const register = async (req, res) => {
+//   const { name, email, password, phone, role } = req.body;
+
+//   try {
+//     if (!name || !email || !password || !phone) {
+//       return res.status(403).json({ message: "All fields are required" });
+//     }
+
+//     // Check for valid role
+//     const allowedRoles = ["tenant", "landlord", "investor", "admin"];
+//     if (role && !allowedRoles.includes(role)) {
+//       return res.status(400).json({ message: "Invalid role provided" });
+//     }
+
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser) {
+//       return res.status(403).json({ message: "User already exists" });
+//     }
+
+//     const hashedPassword = await bcrypt.hash(password, 10);
+//     const verificationToken = Math.floor(
+//       100000 + Math.random() * 900000
+//     ).toString();
+
+//     const newUser = new User({
+//       name,
+//       email,
+//       phone,
+//       password: hashedPassword,
+//       verificationToken,
+//       verificationExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+//       role: role || "tenant", // default to tenant if no role is provided    
+//     });
+
+//     await newUser.save();
+//     await sendVerificationEmail(newUser.email, verificationToken);
+
+//     return res.status(201).json({ message: "User created successfully!"});
+//   } catch (error) {
+//     console.error("Error in register controller:", error.message);
+//     return res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
+
 export const register = async (req, res) => {
   const { name, email, password, phone, role } = req.body;
 
   try {
+    // Validate required fields
     if (!name || !email || !password || !phone) {
-      return res.status(403).json({ message: "All fields are required" });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
     // Check for valid role
@@ -25,16 +71,27 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: "Invalid role provided" });
     }
 
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(403).json({ message: "User already exists" });
+      return res.status(400).json({ message: "User already exists" });
     }
 
+    // Optional: Check if a membership exists with the phone number (for consistency with membership.controller.js)
+    const existingMembership = await Membership.findOne({
+      phone: phone.replace(/^0/, "254").replace(/^\+/, ""),
+    });
+    if (existingMembership) {
+      return res.status(400).json({ message: "A membership with this phone number already exists" });
+    }
+
+    // Hash password and generate verification token
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = Math.floor(
       100000 + Math.random() * 900000
     ).toString();
 
+    // Create new user without membership initially
     const newUser = new User({
       name,
       email,
@@ -42,13 +99,55 @@ export const register = async (req, res) => {
       password: hashedPassword,
       verificationToken,
       verificationExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-      role: role || "tenant", // default to tenant if no role is provided
+      role: role || "tenant", // Default to tenant if no role is provided
     });
 
     await newUser.save();
+
+    // Create default Basic membership
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(startDate.getDate() + 365); // 1-year validity for Basic plan
+
+    const membership = new Membership({
+      user: newUser._id,
+      plan: "Basic",
+      price: 0, // Free tier
+      transactionId: `FREE-${newUser._id}-${Date.now()}`, // Unique transaction ID for free plan
+      phone: phone.replace(/^0/, "254").replace(/^\+/, ""), // Format phone to match membership.controller.js
+      description: "Free Basic membership for new users",
+      startDate,
+      endDate,
+      features: ["Basic Support", "Up to 4 property listings"], // Consistent with membership.controller.js
+      isActive: true,
+      paymentStatus: "paid", // Free plan considered paid
+    });
+
+    await membership.save();
+
+    // Update user with membership ID
+    newUser.membership = membership._id; // Use 'membership' to match User schema
+    await newUser.save();
+
+    // Send verification email
     await sendVerificationEmail(newUser.email, verificationToken);
 
-    return res.status(201).json({ message: "User created successfully!" });
+    return res.status(201).json({
+      message: "User created successfully with Basic membership!",
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        membership: {
+          plan: membership.plan,
+          status: membership.status,
+          startDate: membership.startDate,
+          endDate: membership.endDate,
+          features: membership.features,
+        },
+      },
+    });
   } catch (error) {
     console.error("Error in register controller:", error.message);
     return res.status(500).json({ message: "Internal Server Error" });
