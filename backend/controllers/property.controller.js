@@ -1,5 +1,5 @@
+import Membership from "../models/membership.model.js";
 import Property from "../models/property.model.js";
-import User from "../models/user.model.js";
 import { v2 as cloudinary } from "cloudinary";
 
 // Create a property
@@ -19,11 +19,38 @@ export const createProperty = async (req, res) => {
   const userId = req.user?._id;
 
   try {
+    // Validate required fields
     if (!title || !description || !location || !propertyType) {
       return res.status(403).json({ message: "All fields are required" });
     }
-    if(req.user.role !== "landlord"){
-      return res.status(403).json({ message: "You are not authorized to create a property" });
+    // Check if user is a landlord
+    if (req.user.role !== "landlord") {
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to create a property" });
+    }
+
+    // Check user's membership plan
+    const membership = await Membership.findOne({
+      user: userId,
+      isActive: true,
+    });
+    if (!membership) {
+      return res.status(403).json({
+        message: "No active membership found. Please subscribe to a plan.",
+      });
+    }
+
+    // Check property limit for Basic plan
+    if (membership.plan === "Basic") {
+      const propertyCount = await Property.countDocuments({ owner: userId });
+      if (propertyCount >= 4) {
+        return res.status(403).json({
+          message:
+            "You have reached the maximum limit of 4 properties for the Basic plan. Please upgrade to Pro or Premium plan to add more properties.",
+          upgradeLink: "https://x.ai/grok", // Redirect to subscription upgrade page
+        });
+      }
     }
 
     let uploadedImages = [];
@@ -167,7 +194,7 @@ export const deleteProperty = async (req, res) => {
     }
 
     // ✅ Check ownership
-    if (!property.owner?.equals(req.user._id)  && req.user.role !== "landlord") {
+    if (!property.owner?.equals(req.user._id) && req.user.role !== "landlord") {
       return res
         .status(403)
         .json({ message: "You are not authorized to delete this property" });
@@ -208,5 +235,3 @@ export const propertyDetails = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
-
