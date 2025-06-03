@@ -4,6 +4,7 @@ import Property from "../models/property.model.js";
 import User from "../models/user.model.js";
 import Payment from "../models/payment.model.js"; // Assuming Payment model exists
 import { lipaNaMpesaOnline, verifyMpesaPayment } from "../config/mpesa.config.js";
+import Membership from "../models/membership.model.js";
 
 // @route   POST /api/investments/invest
 // @desc    Initiate investment in a property
@@ -27,8 +28,7 @@ export const initiateInvestment = async (req, res) => {
     const membership = await Membership.findOne({ user: userId, isActive: true });
     if (!membership || membership.plan === "Basic") {
       return res.status(403).json({
-        message: "A Pro or Premium membership is required to invest",
-        upgradeLink: `${process.env.BASE_URL}/api/payments/upgrade`,
+        message: "A Pro or Premium membership is required to invest",       
       });
     }
 
@@ -116,6 +116,7 @@ export const initiateInvestment = async (req, res) => {
       phone: formattedPhone,
       status: "pending",
       description,
+      type: "investment"
     });
 
     res.json({

@@ -78,12 +78,12 @@ export const register = async (req, res) => {
     }
 
     // Optional: Check if a membership exists with the phone number (for consistency with membership.controller.js)
-    const existingMembership = await Membership.findOne({
-      phone: phone.replace(/^0/, "254").replace(/^\+/, ""),
-    });
-    if (existingMembership) {
-      return res.status(400).json({ message: "A membership with this phone number already exists" });
-    }
+    // const existingMembership = await Membership.findOne({
+    //   phone: phone.replace(/^0/, "254").replace(/^\+/, ""),
+    // });
+    // if (existingMembership) {
+    //   return res.status(400).json({ message: "A membership with this phone number already exists" });
+    // }
 
     // Hash password and generate verification token
     const hashedPassword = await bcrypt.hash(password, 10);
