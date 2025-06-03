@@ -3,7 +3,7 @@
 import { lipaNaMpesaOnline } from "../config/mpesa.config.js";
 import Advertisement from "../models/advert.model.js";
 import Membership from "../models/membership.model.js";
-import Partnership from "../models/partnership.model.js";
+import Partnership from "../models/investment.model.js";
 import Payment from "../models/payment.model.js";
 import { validationResult } from 'express-validator';
 
