@@ -74,6 +74,15 @@ const propertySchema = new mongoose.Schema(
       type: Number,
       min: 0,
     },
+    totalInvestedAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    maxInvestmentCapacity: {
+      type: Number,
+      min: 0,
+    },
     contractAddress: {
       type: String,
       trim: true,
