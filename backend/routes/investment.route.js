@@ -4,11 +4,13 @@ import {
   initiateInvestment,
   verifyInvestmentPayment,
   investmentCallback,
+  getInvestments,
 } from "../controllers/investment.controller.js";
 
 const router = express.Router();
 router.post("/invest", protectRoute, initiateInvestment);
 router.post("/verify", protectRoute, verifyInvestmentPayment);
 router.post("/callback", protectRoute, investmentCallback);
+router.get("/", protectRoute, getInvestments);
 
 export default router;
