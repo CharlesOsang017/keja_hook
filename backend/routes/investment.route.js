@@ -5,12 +5,14 @@ import {
   verifyInvestmentPayment,
   investmentCallback,
   getInvestments,
+  getRevenueAnalytics
 } from "../controllers/investment.controller.js";
 
 const router = express.Router();
 router.post("/invest", protectRoute, initiateInvestment);
-router.post("/verify", protectRoute, verifyInvestmentPayment);
+router.post("/verify/:checkoutRequestID", protectRoute, verifyInvestmentPayment);
 router.post("/callback", protectRoute, investmentCallback);
 router.get("/", protectRoute, getInvestments);
+router.get("/analytics", protectRoute, getRevenueAnalytics)
 
 export default router;

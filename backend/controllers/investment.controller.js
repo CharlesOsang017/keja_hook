@@ -273,3 +273,77 @@ export const getInvestments = async (req, res) => {
     res.status(500).json({ message: "Error fetching investments" });
   }
 };
+
+// @route   GET /api/investments/analytics
+// @desc    Get revenue analytics for an investor
+export const getRevenueAnalytics = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Verify user role
+    const user = await User.findById(userId);
+    if (!user || !["investor", "admin"].includes(user.role)) {
+      return res.status(403).json({ message: "Only investors or admins can view analytics" });
+    }
+
+    // Get all confirmed investments for the user
+    const investments = await Investment.find({
+      user: userId,
+      status: "confirmed",
+    }).populate("property", "title");
+
+    // Calculate total revenue
+    const totalRevenue = investments.reduce((sum, inv) => sum + inv.expectedAnnualReturn, 0);
+
+    // Revenue by property
+    const revenueByProperty = investments.reduce((acc, inv) => {
+      const propertyId = inv.property._id.toString();
+      const propertyTitle = inv.property.title;
+      if (!acc[propertyId]) {
+        acc[propertyId] = {
+          propertyTitle,
+          totalReturn: 0,
+          investmentCount: 0,
+        };
+      }
+      acc[propertyId].totalReturn += inv.expectedAnnualReturn;
+      acc[propertyId].investmentCount += 1;
+      return acc;
+    }, {});
+
+    // Revenue by month (last 12 months)
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const revenueByMonth = Array.from({ length: 12 }, (_, i) => {
+      const monthDate = new Date();
+      monthDate.setMonth(monthDate.getMonth() - i);
+      return {
+        month: monthDate.toLocaleString("default", { month: "long", year: "numeric" }),
+        totalReturn: 0,
+      };
+    }).reverse(); // Latest month last
+
+    investments.forEach((inv) => {
+      const startMonth = new Date(inv.startDate);
+      if (startMonth >= oneYearAgo) {
+        const monthIndex = revenueByMonth.findIndex(
+          (m) =>
+            m.month ===
+            startMonth.toLocaleString("default", { month: "long", year: "numeric" })
+        );
+        if (monthIndex !== -1) {
+          revenueByMonth[monthIndex].totalReturn += inv.expectedAnnualReturn;
+        }
+      }
+    });
+
+    res.status(200).json({
+      totalRevenue,
+      revenueByProperty: Object.values(revenueByProperty),
+      revenueByMonth,
+    });
+  } catch (err) {
+    console.error("Error fetching revenue analytics:", err.message);
+    res.status(500).json({ message: "Error fetching revenue analytics" });
+  }
+};
