@@ -62,10 +62,22 @@ const propertySchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    totalTokens: Number,
-    availableTokens: Number,
-    tokenPrice: Number
-    
+    totalTokens: {
+      type: Number,
+      min: 0,
+    },
+    availableTokens: {
+      type: Number,
+      min: 0,
+    },
+    tokenPrice: {
+      type: Number,
+      min: 0,
+    },
+    contractAddress: {
+      type: String,
+      trim: true,
+    },
   },
   { virtualTourLink: String },
   { timestamps: true }
