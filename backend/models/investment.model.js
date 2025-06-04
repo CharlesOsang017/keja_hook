@@ -52,6 +52,24 @@ const investmentSchema = new mongoose.Schema(
       type: String,
       default: "Investment in property",
     },
+    mpesaReceiptNumber: {
+      type: String,
+    },
+    failureReason: {
+      type: String,
+    },
+    tokenAmount: {
+      type: Number,
+      min: 0,
+    },
+    blockchainTxHash: {
+      type: String,
+      trim: true,
+    },
+    isTokenizedInvestment: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
