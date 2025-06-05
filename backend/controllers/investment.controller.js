@@ -3,8 +3,21 @@ import Investment from "../models/investment.model.js";
 import Property from "../models/property.model.js";
 import User from "../models/user.model.js";
 import Payment from "../models/payment.model.js"; // Assuming Payment model exists
-import { lipaNaMpesaOnline, verifyMpesaPayment } from "../config/mpesa.config.js";
+import {
+  lipaNaMpesaOnline,
+  verifyMpesaPayment,
+} from "../config/mpesa.config.js";
 import Membership from "../models/membership.model.js";
+import axios from 'axios'
+import Web3 from "web3";
+
+// Environment variables
+const web3 = new Web3(process.env.BLOCKCHAIN_PROVIDER_URL); // e.g., Infura or Alchemy URL
+const contractAddress = process.env.PROPERTY_TOKEN_CONTRACT_ADDRESS;
+const contract = new web3.eth.Contract(PropertyTokenABI, contractAddress);
+const platformWallet = process.env.PLATFORM_WALLET_ADDRESS;
+
+
 
 // @route   POST /api/investments/invest
 // @desc    Initiate investment in a property
@@ -28,7 +41,8 @@ export const initiateInvestment = async (req, res) => {
     const membership = await Membership.findOne({ user: userId, isActive: true });
     if (!membership || membership.plan === "Basic") {
       return res.status(403).json({
-        message: "A Pro or Premium membership is required to invest",       
+        message: "A Pro or Premium membership is required to invest",
+        upgradeLink: `${process.env.BASE_URL}/api/payments/upgrade`,
       });
     }
 
@@ -108,7 +122,7 @@ export const initiateInvestment = async (req, res) => {
 
     await investment.save();
 
-    // Create Payment record (assuming required by M-Pesa integration)
+    // Create Payment record
     await Payment.create({
       user: userId,
       transactionId: response.CheckoutRequestID,
@@ -116,7 +130,7 @@ export const initiateInvestment = async (req, res) => {
       phone: formattedPhone,
       status: "pending",
       description,
-      type: "investment"
+      type: "investment",
     });
 
     res.json({
@@ -151,7 +165,9 @@ export const investmentCallback = async (req, res) => {
       return res.status(200).json({ message: "Callback already processed" });
     }
 
-    const investment = await Investment.findOne({ transactionId: CheckoutRequestID });
+    const investment = await Investment.findOne({
+      transactionId: CheckoutRequestID,
+    });
     if (!investment) {
       return res.status(404).json({ message: "Investment not found" });
     }
@@ -179,7 +195,11 @@ export const investmentCallback = async (req, res) => {
       }
 
       // Ensure user membership reference (optional, as already set)
-      await User.findByIdAndUpdate(investment.user, { membership: (await Membership.findOne({ user: investment.user, isActive: true }))._id });
+      await User.findByIdAndUpdate(investment.user, {
+        membership: (
+          await Membership.findOne({ user: investment.user, isActive: true })
+        )._id,
+      });
     } else {
       payment.status = "failed";
       payment.failureReason = ResultDesc;
@@ -236,7 +256,11 @@ export const verifyInvestmentPayment = async (req, res) => {
         await property.save();
       }
 
-      await User.findByIdAndUpdate(userId, { membership: (await Membership.findOne({ user: userId, isActive: true }))._id });
+      await User.findByIdAndUpdate(userId, {
+        membership: (
+          await Membership.findOne({ user: userId, isActive: true })
+        )._id,
+      });
 
       return res.json({
         status: "confirmed",
@@ -283,7 +307,9 @@ export const getRevenueAnalytics = async (req, res) => {
     // Verify user role
     const user = await User.findById(userId);
     if (!user || !["investor", "admin"].includes(user.role)) {
-      return res.status(403).json({ message: "Only investors or admins can view analytics" });
+      return res
+        .status(403)
+        .json({ message: "Only investors or admins can view analytics" });
     }
 
     // Get all confirmed investments for the user
@@ -293,7 +319,10 @@ export const getRevenueAnalytics = async (req, res) => {
     }).populate("property", "title");
 
     // Calculate total revenue
-    const totalRevenue = investments.reduce((sum, inv) => sum + inv.expectedAnnualReturn, 0);
+    const totalRevenue = investments.reduce(
+      (sum, inv) => sum + inv.expectedAnnualReturn,
+      0
+    );
 
     // Revenue by property
     const revenueByProperty = investments.reduce((acc, inv) => {
@@ -318,7 +347,10 @@ export const getRevenueAnalytics = async (req, res) => {
       const monthDate = new Date();
       monthDate.setMonth(monthDate.getMonth() - i);
       return {
-        month: monthDate.toLocaleString("default", { month: "long", year: "numeric" }),
+        month: monthDate.toLocaleString("default", {
+          month: "long",
+          year: "numeric",
+        }),
         totalReturn: 0,
       };
     }).reverse(); // Latest month last
@@ -329,7 +361,10 @@ export const getRevenueAnalytics = async (req, res) => {
         const monthIndex = revenueByMonth.findIndex(
           (m) =>
             m.month ===
-            startMonth.toLocaleString("default", { month: "long", year: "numeric" })
+            startMonth.toLocaleString("default", {
+              month: "long",
+              year: "numeric",
+            })
         );
         if (monthIndex !== -1) {
           revenueByMonth[monthIndex].totalReturn += inv.expectedAnnualReturn;
@@ -345,5 +380,149 @@ export const getRevenueAnalytics = async (req, res) => {
   } catch (err) {
     console.error("Error fetching revenue analytics:", err.message);
     res.status(500).json({ message: "Error fetching revenue analytics" });
+  }
+};
+
+// @route   POST /api/investments/tokens/purchase
+// @desc    Purchase property tokens via blockchain
+export const purchasePropertyTokens = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const { propertyId, tokenAmount, ethAmount } = req.body;
+    const userId = req.user._id;
+
+    // Verify user role
+    const user = await User.findById(userId);
+    if (!user || !["investor", "admin"].includes(user.role)) {
+      return res
+        .status(403)
+        .json({ message: "Only investors or admins can purchase tokens" });
+    }
+
+    // Verify membership
+    const membership = await Membership.findOne({
+      user: userId,
+      isActive: true,
+    });
+    if (!membership || membership.plan === "Basic") {
+      return res.status(403).json({
+        message: "A Pro or Premium membership is required to purchase tokens",
+        upgradeLink: `${process.env.BASE_URL}/api/payments/upgrade`,
+      });
+    }
+
+    // Verify property
+    const property = await Property.findById(propertyId);
+    if (
+      !property ||
+      !property.isTokenized ||
+      property.availableTokens < tokenAmount
+    ) {
+      return res.status(400).json({
+        message: "Property not tokenized or insufficient tokens available",
+      });
+    }
+
+    // Verify contract address
+    if (!property.contractAddress) {
+      return res
+        .status(400)
+        .json({ message: "No contract address associated with this property" });
+    }
+
+    // Helper function to fetch KES-to-ETH exchange rate
+    async function getExchangeRate() {
+      try {
+        const response = await axios.get(
+          "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=kes"
+        );
+        return { kesToEth: response.data.ethereum.kes };
+      } catch (err) {
+        throw new Error("Failed to fetch exchange rate");
+      }
+    }
+
+    // Convert KES to ETH/MATIC using exchange rate
+    const exchangeRate = await getExchangeRate(); // Fetch real-time rate
+    const totalKesCost = tokenAmount * property.tokenPrice;
+    const expectedEth = totalKesCost / exchangeRate.kesToEth;
+    if (Math.abs(ethAmount - expectedEth) > 0.01) {
+      return res.status(400).json({ message: "Incorrect ETH amount provided" });
+    }
+
+    // Check smart contract for available tokens
+    const propertyData = await contract.methods.properties(propertyId).call();
+    if (parseInt(propertyData.availableTokens) < tokenAmount) {
+      return res
+        .status(400)
+        .json({ message: "Insufficient tokens available on blockchain" });
+    }
+
+    // Create investment record (pending)
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setFullYear(startDate.getFullYear() + 1);
+
+    // Calculate percentage return (same as traditional investment)
+    const investmentProportion =
+      (tokenAmount * property.tokenPrice) /
+      (property.type === "rental" ? property.rentalPrice : property.price);
+    let percentageReturn;
+    if (investmentProportion < 0.1) {
+      percentageReturn = 5;
+    } else if (investmentProportion <= 0.25) {
+      percentageReturn = 7;
+    } else {
+      percentageReturn = 10;
+    }
+    const expectedAnnualReturn =
+      (tokenAmount * property.tokenPrice * percentageReturn) / 100;
+
+    let investment = await Investment.findOne({
+      user: userId,
+      property: propertyId,
+      isTokenizedInvestment: true,
+      status: "pending",
+    });
+    if (investment) {
+      investment.amount = totalKesCost;
+      investment.tokenAmount = tokenAmount;
+      investment.percentageReturn = percentageReturn;
+      investment.expectedAnnualReturn = expectedAnnualReturn;
+      investment.startDate = startDate;
+      investment.endDate = endDate;
+    } else {
+      investment = new Investment({
+        user: userId,
+        property: propertyId,
+        amount: totalKesCost,
+        tokenAmount,
+        percentageReturn,
+        expectedAnnualReturn,
+        description: `Purchase of ${tokenAmount} tokens for ${property.title}`,
+        startDate,
+        endDate,
+        status: "pending",
+        isTokenizedInvestment: true,
+      });
+    }
+    await investment.save();
+
+    // Note: Blockchain transaction is initiated client-side (MetaMask)
+    res.json({
+      message: `Token purchase initiated for ${tokenAmount} tokens of ${property.title}`,
+      investmentId: investment._id,
+      contractAddress: property.contractAddress,
+      propertyId,
+      tokenAmount,
+      ethAmount: web3.utils.toWei(ethAmount.toString(), "ether"),
+    });
+  } catch (err) {
+    console.error("Token purchase error:", err.message);
+    res.status(500).json({ message: "Server error" });
   }
 };
