@@ -2,7 +2,7 @@
   "type": "module",
   "scripts": {
     "compile": "hardhat compile",
-    "deploy": "hardhat run scripts/deploy.mjs --network mumbai",
+    "deploy": "hardhat run scripts/deploy.mjs --network sepolia",
     "test": "hardhat test"
   },
   "devDependencies": {

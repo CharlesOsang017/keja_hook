@@ -3,7 +3,7 @@ import Advertisement from "../models/advert.model.js"; // Adjust path as needed
 
 export const createAdWithLimit = async (req, res) => {
   try {
-    // 1. Validate user authentication
+    
     if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "User not authenticated" });
     }
