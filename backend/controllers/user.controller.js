@@ -53,7 +53,7 @@ export const register = async (req, res) => {
       phone,
       password: hashedPassword,
       verificationToken,
-      verificationExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+      verificationExpiresAt: Date.now() + 3 * 60 * 1000, // expires in 3 minutes
       role: role || "tenant", 
     });
 
