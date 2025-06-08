@@ -12,55 +12,10 @@ import Membership from "../models/membership.model.js";
 
 // @route   POST /api/users/register
 // @desc   register a user
-// export const register = async (req, res) => {
-//   const { name, email, password, phone, role } = req.body;
-
-//   try {
-//     if (!name || !email || !password || !phone) {
-//       return res.status(403).json({ message: "All fields are required" });
-//     }
-
-//     // Check for valid role
-//     const allowedRoles = ["tenant", "landlord", "investor", "admin"];
-//     if (role && !allowedRoles.includes(role)) {
-//       return res.status(400).json({ message: "Invalid role provided" });
-//     }
-
-//     const existingUser = await User.findOne({ email });
-//     if (existingUser) {
-//       return res.status(403).json({ message: "User already exists" });
-//     }
-
-//     const hashedPassword = await bcrypt.hash(password, 10);
-//     const verificationToken = Math.floor(
-//       100000 + Math.random() * 900000
-//     ).toString();
-
-//     const newUser = new User({
-//       name,
-//       email,
-//       phone,
-//       password: hashedPassword,
-//       verificationToken,
-//       verificationExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-//       role: role || "tenant", // default to tenant if no role is provided    
-//     });
-
-//     await newUser.save();
-//     await sendVerificationEmail(newUser.email, verificationToken);
-
-//     return res.status(201).json({ message: "User created successfully!"});
-//   } catch (error) {
-//     console.error("Error in register controller:", error.message);
-//     return res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
 export const register = async (req, res) => {
   const { name, email, password, phone, role } = req.body;
 
-  try {
-    // Validate required fields
+  try {    
     if (!name || !email || !password || !phone) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -99,7 +54,7 @@ export const register = async (req, res) => {
       password: hashedPassword,
       verificationToken,
       verificationExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-      role: role || "tenant", // Default to tenant if no role is provided
+      role: role || "tenant", 
     });
 
     await newUser.save();
@@ -107,26 +62,26 @@ export const register = async (req, res) => {
     // Create default Basic membership
     const startDate = new Date();
     const endDate = new Date();
-    endDate.setDate(startDate.getDate() + 5); // 1-year validity for Basic plan
+    endDate.setDate(startDate.getDate() + 4); // 4-days  validity for Basic plan
 
     const membership = new Membership({
       user: newUser._id,
       plan: "Basic",
-      price: 0, // Free tier
-      transactionId: `FREE-${newUser._id}-${Date.now()}`, // Unique transaction ID for free plan
-      phone: phone.replace(/^0/, "254").replace(/^\+/, ""), // Format phone to match membership.controller.js
+      price: 0, 
+      transactionId: `FREE-${newUser._id}-${Date.now()}`, 
+      phone: phone.replace(/^0/, "254").replace(/^\+/, ""), 
       description: "Free Basic membership for new users",
       startDate,
       endDate,
       features: ["Basic Support", "Up to 4 property listings", "It is only active for 4 days upon registration"], // Consistent with membership.controller.js
       isActive: true,
-      paymentStatus: "paid", // Free plan considered paid
+      paymentStatus: "paid", 
     });
 
     await membership.save();
 
     // Update user with membership ID
-    newUser.membership = membership._id; // Use 'membership' to match User schema
+    newUser.membership = membership._id; 
     await newUser.save();
 
     // Send verification email
@@ -160,7 +115,7 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email }).select("+password"); // include password
+    const user = await User.findOne({ email }).select("+password"); 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -193,7 +148,7 @@ export const logout = async (req, res) => {
 };
 
 // @route   GET /api/users/me
-// @desc   get a login user
+// @desc   get a logged in user
 export const getMe = async (req, res) => {
   try {
     const me = await User.findById(req.user._id).select("-password");
@@ -225,7 +180,7 @@ export const verifyEmail = async (req, res) => {
 
     user.isVerified = true;
     user.verificationToken = undefined;
-    user.verificationTokenExpiresAt = undefined;
+    user.verificationExpiresAt = undefined;
     await user.save();
 
     await sendWelcomeEmail(user.email, user.name);

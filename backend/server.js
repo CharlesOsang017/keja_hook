@@ -34,7 +34,7 @@ cloudinary.config({
 
 
 
-// middleware
+// middlewares
 app.use("/api/users", userRoute);
 app.use("/api/properties", propertyRoute);
 app.use("/api/payment", paymentRoute);
