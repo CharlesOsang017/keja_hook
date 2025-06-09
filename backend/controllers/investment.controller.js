@@ -66,11 +66,11 @@ export const initiateInvestment = async (req, res) => {
     const investmentProportion = amount / basePrice;
     let percentageReturn;
     if (investmentProportion < 0.1) {
-      percentageReturn = 5; // 5% for < 10% of property value
+      percentageReturn = 5; 
     } else if (investmentProportion <= 0.25) {
-      percentageReturn = 7; // 7% for 10-25%
+      percentageReturn = 7; 
     } else {
-      percentageReturn = 10; // 10% for > 25%
+      percentageReturn = 10; 
     }
 
     const expectedAnnualReturn = (amount * percentageReturn) / 100;

@@ -1,9 +1,10 @@
-import Membership from "../models/membership.model.js"; // Adjust path as needed
-import Advertisement from "../models/advert.model.js"; // Adjust path as needed
+import Membership from "../models/membership.model.js";
+import Advertisement from "../models/advert.model.js";
 
+// @route   POST /api/ads/
+// @desc    Create an ad with limitation according to user membership
 export const createAdWithLimit = async (req, res) => {
   try {
-    
     if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "User not authenticated" });
     }
