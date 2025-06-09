@@ -46,7 +46,7 @@ const leaseSchema = new mongoose.Schema({
       paymentStatus: {
         type: String,
         enum: ["pending", "completed", "failed"],
-        default: 'pending'
+        default: "pending",
       },
     },
   ],

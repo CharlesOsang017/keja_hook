@@ -4,7 +4,7 @@ const advertisementSchema = new mongoose.Schema(
   {
     advertiser: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", 
+      ref: "User",
       required: true,
     },
     title: {
@@ -18,10 +18,10 @@ const advertisementSchema = new mongoose.Schema(
       trim: true,
     },
     image: {
-      type: String, 
+      type: String,
     },
     link: {
-      type: String, // Redirect URL
+      type: String,
       trim: true,
     },
     adType: {

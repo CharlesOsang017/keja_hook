@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       match: [
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        'Please add a valid email'
+        "Please add a valid email",
       ],
     },
     password: {
@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema(
     },
     membership: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Membership"
+      ref: "Membership",
     },
     resetPasswordToken: String,
     resetPasswordExpiresAt: Date,
@@ -44,9 +44,9 @@ const userSchema = new mongoose.Schema(
       enum: ["tenant", "landlord", "investor", "admin"],
       default: "tenant",
     },
-    walletAddress: { type: String }, 
+    walletAddress: { type: String },
   },
- 
+
   { timestamps: true }
 );
 
