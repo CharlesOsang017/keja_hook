@@ -2,7 +2,8 @@ import Membership from "../models/membership.model.js";
 import Property from "../models/property.model.js";
 import { v2 as cloudinary } from "cloudinary";
 
-// Create a property
+// @route   POST /api/properties/create-property
+// @desc   Create the property 
 export const createProperty = async (req, res) => {
   const {
     title,
@@ -18,8 +19,7 @@ export const createProperty = async (req, res) => {
   let { images } = req.body;
   const userId = req.user?._id;
 
-  try {
-    // Validate required fields
+  try {    
     if (!title || !description || !location || !propertyType) {
       return res.status(403).json({ message: "All fields are required" });
     }
@@ -51,7 +51,7 @@ export const createProperty = async (req, res) => {
         });
       }
     }
-
+    // multiple [5] images upload using cloudinary
     let uploadedImages = [];
 
     if (Array.isArray(images)) {
@@ -85,7 +85,8 @@ export const createProperty = async (req, res) => {
   }
 };
 
-// Get all properties
+// @route   GET /api/properties/all-properties
+// @desc   All property listings 
 export const getAllProperties = async (req, res) => {
   try {
     const allProperties = await Property.find()
@@ -97,7 +98,8 @@ export const getAllProperties = async (req, res) => {
   }
 };
 
-// edit property
+// @route   POST /api/properties/edit-property/:id
+// @desc   Edit the property 
 export const editProperty = async (req, res) => {
   const {
     title,
@@ -128,7 +130,7 @@ export const editProperty = async (req, res) => {
         .json({ message: "You are not the owner of this property" });
     }
 
-    // 🔄 Handle image update
+    // Handle image update functionality
     if (images) {
       // Delete old Cloudinary images
       if (Array.isArray(property.images)) {
@@ -158,7 +160,7 @@ export const editProperty = async (req, res) => {
       property.images = uploadedImages;
     }
 
-    // 📝 Update other fields only if provided
+    // Update other fields only if provided
     if (title) property.title = title;
     if (description) property.description = description;
     if (location) property.location = location;
@@ -182,7 +184,9 @@ export const editProperty = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
-// delete property
+
+// @route   POST /api/properties/delete-property/:id
+// @desc   Delete the property 
 export const deleteProperty = async (req, res) => {
   const { id } = req.params;
 
@@ -192,14 +196,14 @@ export const deleteProperty = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    // ✅ Check ownership
+    // Check ownership
     if (!property.owner?.equals(req.user._id) && req.user.role !== "landlord") {
       return res
         .status(403)
         .json({ message: "You are not authorized to delete this property" });
     }
 
-    // ✅ Delete each image from Cloudinary
+    //  Delete each image from Cloudinary
     if (Array.isArray(property.images)) {
       for (const image of property.images) {
         try {
@@ -211,7 +215,7 @@ export const deleteProperty = async (req, res) => {
       }
     }
 
-    // ✅ Delete property from DB
+    //  Delete property from the Database
     await Property.findByIdAndDelete(id);
 
     return res.status(200).json({ message: "Property deleted successfully!" });
@@ -220,7 +224,9 @@ export const deleteProperty = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
-// get property details
+
+// @route   GET /api/properties/property/:id
+// @desc   Property details 
 export const propertyDetails = async (req, res) => {
   const { id } = req.params;
   try {
