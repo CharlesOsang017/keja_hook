@@ -7,6 +7,8 @@ import Membership from "../models/membership.model.js";
 import Payment from "../models/payment.model.js";
 import User from "../models/user.model.js";
 
+// @route   POST /api/payments/upgrade
+// @desc    Handle M-Pesa  for membership upgrade
 export const initiateMembershipUpgrade = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -18,15 +20,15 @@ export const initiateMembershipUpgrade = async (req, res) => {
     const userId = req.user._id;
 
     const validPlans = {
-      Pro: 1, // KES
-      Premium: 2, // KES
+      Pro: 1, 
+      Premium: 2, 
     };
 
     if (!validPlans[plan]) {
       return res.status(400).json({ message: "Invalid membership plan selected" });
     }
 
-    // Find the user's existing membership
+    // Check the user's existing membership
     const existingMembership = await Membership.findOne({ user: userId, isActive: true });
 
     if (!existingMembership) {
@@ -67,7 +69,7 @@ export const initiateMembershipUpgrade = async (req, res) => {
         : plan === "Premium"
         ? ["Priority Support", "Unlimited Listings"]
         : [];
-    existingMembership.isActive = false; // Set to false until payment is confirmed
+    existingMembership.isActive = false; 
     existingMembership.paymentStatus = "pending";
 
     await existingMembership.save();
@@ -224,7 +226,7 @@ export const verifyUpgradePayment = async (req, res) => {
   }
 };
 
-// @route   GET /api/memberships
+// @route   GET /api/membership/memberships
 // @desc    Get all memberships
 export const getMemberships = async (req, res) => {
   try {
