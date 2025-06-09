@@ -235,9 +235,7 @@ export const initiateTokenPurchase = async (req, res) => {
       callbackUrl
     );
 
-    // Save the transaction details (you might want to create a separate model for token purchases)
-    // For now, we'll just return the response
-
+  
     res.json({
       message: "Token purchase initiated successfully",
       checkoutRequestID: response.CheckoutRequestID,
@@ -287,7 +285,7 @@ export const tokenPurchaseCallback = async (req, res) => {
       property.availableTokens -= tokensPurchased;
       await property.save();
 
-      // Create tokenized asset records (simplified - in reality you'd interact with blockchain here)
+      // Create tokenized asset records 
       for (let i = 0; i < tokensPurchased; i++) {
         const tokenizedAsset = new TokenizedAsset({
           property: propertyId,

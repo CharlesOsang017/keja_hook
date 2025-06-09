@@ -4,8 +4,8 @@ import Recommendation from "../models/recommendation.model.js";
 import axiosRetry from "axios-retry";
 
 axiosRetry(axios, {
-  retries: 5, // Increase retries
-  retryDelay: (retryCount) => Math.min(1000 * 2 ** retryCount, 10000), // Cap delay at 10s
+  retries: 5, 
+  retryDelay: (retryCount) => Math.min(1000 * 2 ** retryCount, 10000), 
   retryCondition: (error) => error.response?.status === 429,
 });
 
@@ -104,8 +104,8 @@ export const autoRecommendations = async (req, res) => {
           {
             model: "gpt-3.5-turbo",
             messages: [{ role: "user", content: prompt }],
-            temperature: 1, // Lowered for more predictable output
-            max_tokens: 50, // Reduced to save tokens
+            temperature: 1, 
+            max_tokens: 50, 
           },
           {
             headers: {

@@ -4,7 +4,7 @@ const advertisementSchema = new mongoose.Schema(
   {
     advertiser: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // Assuming advertiser is also a user
+      ref: "User", 
       required: true,
     },
     title: {
@@ -18,7 +18,7 @@ const advertisementSchema = new mongoose.Schema(
       trim: true,
     },
     image: {
-      type: String, // URL to the ad banner/image
+      type: String, 
     },
     link: {
       type: String, // Redirect URL

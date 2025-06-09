@@ -135,7 +135,7 @@ export const membershipUpgradeCallback = async (req, res) => {
       membership.mpesaReceiptNumber = metadata.MpesaReceiptNumber;
       await membership.save();
 
-      // Update user with membership ID (already linked, but ensure consistency)
+      // Update user with membership ID 
       await User.findByIdAndUpdate(payment.user, {
         membership: membership._id,
       });
