@@ -143,7 +143,7 @@ export const initiateInvestment = async (req, res) => {
   }
 };
 
-// @route   POST /api/investments/investment-callback
+// @route   POST /api/investments/callback
 // @desc    Handle M-Pesa callback for investment payment
 export const investmentCallback = async (req, res) => {
   try {
@@ -194,7 +194,7 @@ export const investmentCallback = async (req, res) => {
         await property.save();
       }
 
-      // Ensure user membership reference (optional, as already set)
+      // Ensure user membership reference
       await User.findByIdAndUpdate(investment.user, {
         membership: (
           await Membership.findOne({ user: investment.user, isActive: true })
@@ -353,7 +353,7 @@ export const getRevenueAnalytics = async (req, res) => {
         }),
         totalReturn: 0,
       };
-    }).reverse(); // Latest month last
+    }).reverse(); 
 
     investments.forEach((inv) => {
       const startMonth = new Date(inv.startDate);
@@ -447,7 +447,7 @@ export const purchasePropertyTokens = async (req, res) => {
     }
 
     // Convert KES to ETH/MATIC using exchange rate
-    const exchangeRate = await getExchangeRate(); // Fetch real-time rate
+    const exchangeRate = await getExchangeRate(); 
     const totalKesCost = tokenAmount * property.tokenPrice;
     const expectedEth = totalKesCost / exchangeRate.kesToEth;
     if (Math.abs(ethAmount - expectedEth) > 0.01) {
@@ -512,7 +512,7 @@ export const purchasePropertyTokens = async (req, res) => {
     }
     await investment.save();
 
-    // Note: Blockchain transaction is initiated client-side (MetaMask)
+   
     res.json({
       message: `Token purchase initiated for ${tokenAmount} tokens of ${property.title}`,
       investmentId: investment._id,

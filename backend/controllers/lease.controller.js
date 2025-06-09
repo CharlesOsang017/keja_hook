@@ -3,14 +3,13 @@ import Property from "../models/property.model.js";
 import User from "../models/user.model.js";
 import Lease from "../models/lease.model.js";
 
-// @route   POST /api/leases
+// @route   POST /api/lease/
 // @desc    Create a new lease agreement
 export const createLease = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-
   try {
     const {
       propertyId,
@@ -71,7 +70,7 @@ export const createLease = async (req, res) => {
   }
 };
 
-// @route   GET /api/leases
+// @route   GET /api/lease/
 // @desc    Get leases for current user
 export const getLeases = async (req, res) => {
   try {
@@ -121,7 +120,7 @@ export const getDetailLease = async (req, res) => {
   }
 };
 
-// @route   PUT /api/leases/:id
+// @route   PUT /api/lease/:id
 // @desc    Update lease agreement
 export const updateLease = async (req, res) => {
   try {
@@ -145,7 +144,7 @@ export const updateLease = async (req, res) => {
   }
 };
 
-// @route   DELETE /api/leases/:id
+// @route   DELETE /api/lease/:id
 // @desc    Terminate lease agreement
 export const terminateLease = async (req, res) => {
   try {
@@ -168,7 +167,7 @@ export const terminateLease = async (req, res) => {
   }
 };
 
-// @route   GET /api/leases/property/:propertyId
+// @route   GET /api/lease/property/:propertyId
 // @desc    Get lease for a specific property
 export const getLeaseByProperty = async (req, res) => {
   try {
