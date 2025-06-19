@@ -14,7 +14,7 @@ import Web3 from "web3";
 // Environment variables
 const web3 = new Web3(process.env.BLOCKCHAIN_PROVIDER_URL); // e.g., Infura or Alchemy URL
 const contractAddress = process.env.PROPERTY_TOKEN_CONTRACT_ADDRESS;
-const contract = new web3.eth.Contract(PropertyTokenABI, contractAddress);
+// const contract = new web3.eth.Contract(PropertyTokenABI, contractAddress);
 const platformWallet = process.env.PLATFORM_WALLET_ADDRESS;
 
 
