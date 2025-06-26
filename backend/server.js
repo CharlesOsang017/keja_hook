@@ -14,6 +14,7 @@ import favoriteRoute from "./routes/favorite.route.js";
 import membershipRoute from './routes/membership.route.js'
 import advertRoute from "./routes/advert.route.js";
 import investmentRoute from './routes/investment.route.js'
+import blockchainRoute from './routes/blockchain.route.js'
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.use("/api/favorites", favoriteRoute);
 app.use("/api/ads", advertRoute);
 app.use("/api/membership", membershipRoute)
 app.use("/api/investment", investmentRoute)
+app.use("/api/blockchain", blockchainRoute)
 
 const port = process.env.PORT || 6000;
 

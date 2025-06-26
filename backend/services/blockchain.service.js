@@ -1,6 +1,8 @@
+// Updated blockchain.service.js using JS-based ABI to avoid import issues
+
 import Web3 from 'web3';
-import PropertyTokenABI from '../abis/PropertyToken.json';
-import RevenueDistributionABI from '../abis/RevenueDistribution.json';
+import PropertyTokenABI from '../abis/PropertyToken.js';
+import RevenueDistributionABI from '../abis/RevenueDistribution.js';
 import Property from '../models/property.model.js';
 import Payment from '../models/payment.model.js';
 import dotenv from 'dotenv';
@@ -33,14 +35,27 @@ export default class BlockchainService {
 
   async tokenizeProperty(propertyData, ownerAddress) {
     const { metadataURI, valuation, totalShares } = propertyData;
-
+  
+    // Validate input
+    if (!valuation || isNaN(valuation)) {
+      throw new Error('Invalid or missing valuation value');
+    }
+  
+    if (!totalShares || isNaN(totalShares)) {
+      throw new Error('Invalid or missing totalShares value');
+    }
+  
+    if (!ownerAddress) {
+      throw new Error('Owner address is required');
+    }
+  
     // Convert valuation to wei
     const totalValueWei = this.web3.utils.toWei(valuation.toString(), 'ether');
-
+  
     const txData = this.propertyToken.methods
       .tokenizeProperty(metadataURI, totalValueWei, totalShares, ownerAddress)
       .encodeABI();
-
+  
     return {
       to: this.chainConfig.contracts.propertyToken,
       data: txData,
@@ -48,6 +63,7 @@ export default class BlockchainService {
       chainId: this.chainConfig.id
     };
   }
+  
 
   async purchaseShares(propertyId, shares, investorAddress) {
     const property = await Property.findById(propertyId);

@@ -69,7 +69,7 @@ const propertySchema = new mongoose.Schema(
     availableTokens: {
       type: Number,
       min: 0,
-    },
+    },    
     tokenPrice: {
       type: Number,
       min: 0,
@@ -87,6 +87,14 @@ const propertySchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    valuation: {
+      type: Number,
+      required: true
+    },
+    totalShares: {
+      type: Number,
+      required: true
+    }
   },
   { virtualTourLink: String },
   { timestamps: true }
