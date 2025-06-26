@@ -57,6 +57,8 @@ export const register = async (req, res) => {
       role: role || "tenant", 
     });
 
+
+    
     await newUser.save();
 
     // Create default Basic membership
@@ -94,6 +96,7 @@ export const register = async (req, res) => {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+
         membership: {
           plan: membership.plan,
           status: membership.status,
