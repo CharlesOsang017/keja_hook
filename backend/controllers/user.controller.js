@@ -9,6 +9,8 @@ import {
   sendWelcomeEmail,
 } from "../mailtrap/emails.js";
 import Membership from "../models/membership.model.js";
+import { sendEmail } from "../mailtrap/send-email.js";
+import { VERIFICATION_EMAIL_TEMPLATE } from "../mailtrap/emailTemplates.js";
 
 // @route   POST /api/users/register
 // @desc   register a user
@@ -37,11 +39,9 @@ export const register = async (req, res) => {
       phone: phone.replace(/^0/, "254").replace(/^\+/, ""),
     });
     if (existingMembership) {
-      return res
-        .status(400)
-        .json({
-          message: "A membership with this phone number already exists",
-        });
+      return res.status(400).json({
+        message: "A membership with this phone number already exists",
+      });
     }
 
     // Hash password and generate verification token
@@ -93,10 +93,24 @@ export const register = async (req, res) => {
     await newUser.save();
 
     // Send verification email
-    await sendVerificationEmail(newUser.email, verificationToken);
+    // await sendVerificationEmail(newUser.email, verificationToken);  
+    const emailBody = VERIFICATION_EMAIL_TEMPLATE.replace(
+      "{verificationCode}",
+      verificationToken
+    );
+    const emailSubject = "Verify Your Email";
+
+    await sendEmail(email, emailSubject, emailBody);
+
+    // if (!isEmailSent) {
+    //   return res
+    //     .status(500)
+    //     .json({ message: "Failed to send verification email" });
+    // }
 
     return res.status(201).json({
-      message: "User created successfully with Basic membership!",
+      message:
+        "Verification email sent to your email. Please check and verify your account.",
       user: {
         id: newUser._id,
         name: newUser.name,
