@@ -40,7 +40,7 @@ export const initiateTokenization = async (req, res) => {
       user: req.user._id,
       property: propertyId,
       amount: property.tokenizationFee,
-      type: 'tokenization',
+      type: 'token',
       status: 'pending',
       transactionId: `TKN-${Date.now()}`,
       blockchain: 'ethereum'

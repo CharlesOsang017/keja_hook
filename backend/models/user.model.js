@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      unique: true,
+      // unique: true,
       required: true,
     },
     phone: {

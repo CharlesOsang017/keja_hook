@@ -15,7 +15,7 @@ import Membership from "../models/membership.model.js";
 export const register = async (req, res) => {
   const { name, email, password, phone, role } = req.body;
 
-  try {    
+  try {
     if (!name || !email || !password || !phone) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -33,12 +33,16 @@ export const register = async (req, res) => {
     }
 
     // Optional: Check if a membership exists with the phone number (for consistency with membership.controller.js)
-    // const existingMembership = await Membership.findOne({
-    //   phone: phone.replace(/^0/, "254").replace(/^\+/, ""),
-    // });
-    // if (existingMembership) {
-    //   return res.status(400).json({ message: "A membership with this phone number already exists" });
-    // }
+    const existingMembership = await Membership.findOne({
+      phone: phone.replace(/^0/, "254").replace(/^\+/, ""),
+    });
+    if (existingMembership) {
+      return res
+        .status(400)
+        .json({
+          message: "A membership with this phone number already exists",
+        });
+    }
 
     // Hash password and generate verification token
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -54,11 +58,9 @@ export const register = async (req, res) => {
       password: hashedPassword,
       verificationToken,
       verificationExpiresAt: Date.now() + 3 * 60 * 1000, // expires in 3 minutes
-      role: role || "tenant", 
+      role: role || "tenant",
     });
 
-
-    
     await newUser.save();
 
     // Create default Basic membership
@@ -69,21 +71,25 @@ export const register = async (req, res) => {
     const membership = new Membership({
       user: newUser._id,
       plan: "Basic",
-      price: 0, 
-      transactionId: `FREE-${newUser._id}-${Date.now()}`, 
-      phone: phone.replace(/^0/, "254").replace(/^\+/, ""), 
+      price: 0,
+      transactionId: `FREE-${newUser._id}-${Date.now()}`,
+      phone: phone.replace(/^0/, "254").replace(/^\+/, ""),
       description: "Free Basic membership for new users",
       startDate,
       endDate,
-      features: ["Basic Support", "Up to 4 property listings", "It is only active for 4 days upon registration"], // Consistent with membership.controller.js
+      features: [
+        "Basic Support",
+        "Up to 4 property listings",
+        "It is only active for 4 days upon registration",
+      ], // Consistent with membership.controller.js
       isActive: true,
-      paymentStatus: "paid", 
+      paymentStatus: "paid",
     });
 
     await membership.save();
 
     // Update user with membership ID
-    newUser.membership = membership._id; 
+    newUser.membership = membership._id;
     await newUser.save();
 
     // Send verification email
@@ -118,7 +124,7 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email }).select("+password"); 
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -227,7 +233,7 @@ export const forgotPassword = async (req, res) => {
     // send email
     await sendPasswordResetEmail(
       user.email,
-      `${process.env.CLIENT_URL}/reset-password/${resetToken}`
+      `${process.env.CLIENT_URL}/reset-password/?token=${resetToken}`
     );
 
     res.status(200).json({
