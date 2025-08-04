@@ -3,14 +3,15 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { generateTokenAndSetCookie } from "../utils/token.js";
 import {
-  sendPasswordResetEmail,
+  // sendPasswordResetEmail,
   sendResetSuccessEmail,
-  sendVerificationEmail,
-  sendWelcomeEmail,
+  // sendVerificationEmail,
+  // sendWelcomeEmail,
 } from "../mailtrap/emails.js";
 import Membership from "../models/membership.model.js";
-import { sendEmail } from "../mailtrap/send-email.js";
-import { VERIFICATION_EMAIL_TEMPLATE } from "../mailtrap/emailTemplates.js";
+import { sendPasswordResetEmail, sendVerificationEmail, sendWelcomeEmail } from "../mailtrap/send-email.js";
+// import { sendEmail } from "../mailtrap/send-email.js";
+
 
 // @route   POST /api/users/register
 // @desc   register a user
@@ -93,21 +94,14 @@ export const register = async (req, res) => {
     await newUser.save();
 
     // Send verification email
-    // await sendVerificationEmail(newUser.email, verificationToken);  
-    const emailBody = VERIFICATION_EMAIL_TEMPLATE.replace(
-      "{verificationCode}",
-      verificationToken
-    );
-    const emailSubject = "Verify Your Email";
+    await sendVerificationEmail(newUser.email, verificationToken);  
+    // const emailBody = VERIFICATION_EMAIL_TEMPLATE.replace(
+    //   "{verificationCode}",
+    //   verificationToken
+    // );
+    // const emailSubject = "Verify Your Email";
 
-    await sendEmail(email, emailSubject, emailBody);
-
-    // if (!isEmailSent) {
-    //   return res
-    //     .status(500)
-    //     .json({ message: "Failed to send verification email" });
-    // }
-
+    // await sendEmail(email, emailSubject, emailBody);
     return res.status(201).json({
       message:
         "Verification email sent to your email. Please check and verify your account.",
@@ -206,7 +200,8 @@ export const verifyEmail = async (req, res) => {
     user.verificationExpiresAt = undefined;
     await user.save();
 
-    await sendWelcomeEmail(user.email, user.name);
+    const subject = "Welcome to Keja Hook";
+    // await sendWelcomeEmail(user.email, subject, user.name);
 
     res.status(200).json({
       success: true,
@@ -216,6 +211,7 @@ export const verifyEmail = async (req, res) => {
         password: undefined,
       },
     });
+   
   } catch (error) {
     console.log("error in verifyEmail ", error);
     res.status(500).json({ success: false, message: "Server error" });
