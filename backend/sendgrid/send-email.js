@@ -1,6 +1,10 @@
 import sgMail from "@sendgrid/mail";
 import dotenv from "dotenv";
-import { PASSWORD_RESET_REQUEST_TEMPLATE, VERIFICATION_EMAIL_TEMPLATE } from "./emailTemplates.js";
+import {
+  PASSWORD_RESET_REQUEST_TEMPLATE,
+  PASSWORD_RESET_SUCCESS_TEMPLATE,
+  VERIFICATION_EMAIL_TEMPLATE,
+} from "./emailTemplates.js";
 
 dotenv.config();
 
@@ -75,24 +79,45 @@ export const sendWelcomeEmail = async (email, subject, name) => {
   }
 };
 
-// send passwordReset email
+// send passwordResetRequest email
 export const sendPasswordResetEmail = async (email, resetURL) => {
   const recipient = [{ email }];
   const sender = process.env.FROM_EMAIL;
   const msg = {
     from: sender,
-      to: recipient,
-      subject: "Reset your password",
-      html: PASSWORD_RESET_REQUEST_TEMPLATE.replace("{resetURL}", resetURL),
-      category: "Password Reset",
-  }
+    to: recipient,
+    subject: "Reset your password",
+    html: PASSWORD_RESET_REQUEST_TEMPLATE.replace("{resetURL}", resetURL),
+    category: "Password Reset",
+  };
   try {
     await sgMail.send(msg);
     console.log("Password reset email sent successfully");
- 
   } catch (error) {
     console.error(`Error sending password reset email`, error);
 
     throw new Error(`Error sending password reset email: ${error}`);
+  }
+};
+
+// send successfull password reset email
+export const sendResetSuccessEmail = async (email) => {
+  const recipient = [{ email }];
+  const sender = process.env.FROM_EMAIL;
+  const msg = {
+    from: sender,
+    to: recipient,
+    subject: "Password Reset Successful",
+    html: PASSWORD_RESET_SUCCESS_TEMPLATE,
+    category: "Password Reset",
+  };
+
+  try {
+    await sgMail.send(msg);
+
+    console.log("Password reset email sent successfully");
+  } catch (error) {
+    console.error(`Error sending password reset success email`, error);
+    throw new Error(`Error sending password reset success email: ${error}`);
   }
 };

@@ -2,16 +2,14 @@ import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { generateTokenAndSetCookie } from "../utils/token.js";
-import {
-  // sendPasswordResetEmail,
-  sendResetSuccessEmail,
-  // sendVerificationEmail,
-  // sendWelcomeEmail,
-} from "../mailtrap/emails.js";
 import Membership from "../models/membership.model.js";
-import { sendPasswordResetEmail, sendVerificationEmail, sendWelcomeEmail } from "../mailtrap/send-email.js";
+import {
+  sendPasswordResetEmail,
+  sendResetSuccessEmail,
+  sendVerificationEmail,
+  sendWelcomeEmail,
+} from "../sendgrid/send-email.js";
 // import { sendEmail } from "../mailtrap/send-email.js";
-
 
 // @route   POST /api/users/register
 // @desc   register a user
@@ -94,7 +92,7 @@ export const register = async (req, res) => {
     await newUser.save();
 
     // Send verification email
-    await sendVerificationEmail(newUser.email, verificationToken);  
+    await sendVerificationEmail(newUser.email, verificationToken);
     // const emailBody = VERIFICATION_EMAIL_TEMPLATE.replace(
     //   "{verificationCode}",
     //   verificationToken
@@ -211,7 +209,6 @@ export const verifyEmail = async (req, res) => {
         password: undefined,
       },
     });
-   
   } catch (error) {
     console.log("error in verifyEmail ", error);
     res.status(500).json({ success: false, message: "Server error" });
