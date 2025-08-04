@@ -54,31 +54,6 @@ export const sendVerificationEmail = async (email, verificationToken) => {
   }
 };
 
-// send welcome email
-export const sendWelcomeEmail = async (email, subject, name) => {
-  const recipient = [{ email }];
-  const sender = process.env.FROM_EMAIL;
-  const msg = {
-    from: sender,
-    to: recipient,
-    template_uuid: "9bcb3a7b-9733-43a9-8f80-640d9666b4f8",
-    template_variables: {
-      company_info_name: "Keja Hook",
-      name: name,
-    },
-    subject: subject,
-  };
-
-  try {
-    await sgMail.send(msg);
-    console.log("Welcome email sent successfully");
-  } catch (error) {
-    console.error(`Error sending welcome email`, error);
-
-    throw new Error(`Error sending welcome email: ${error}`);
-  }
-};
-
 // send passwordResetRequest email
 export const sendPasswordResetEmail = async (email, resetURL) => {
   const recipient = [{ email }];

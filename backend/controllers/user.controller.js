@@ -7,7 +7,6 @@ import {
   sendPasswordResetEmail,
   sendResetSuccessEmail,
   sendVerificationEmail,
-  sendWelcomeEmail,
 } from "../sendgrid/send-email.js";
 // import { sendEmail } from "../mailtrap/send-email.js";
 
@@ -155,7 +154,7 @@ export const login = async (req, res) => {
 // @desc   log out a user
 export const logout = async (req, res) => {
   try {
-    res.cookie("jwt", "", { maxAge: 0 });
+    res.cookie("access_token", "", { maxAge: 0 });
     return res.status(200).json({ message: "Logged Out successffully!" });
   } catch (error) {
     console.log("error in logout controller", error.message);
@@ -197,9 +196,6 @@ export const verifyEmail = async (req, res) => {
     user.verificationToken = undefined;
     user.verificationExpiresAt = undefined;
     await user.save();
-
-    const subject = "Welcome to Keja Hook";
-    // await sendWelcomeEmail(user.email, subject, user.name);
 
     res.status(200).json({
       success: true,
